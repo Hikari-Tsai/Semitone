@@ -4,6 +4,8 @@
 
 A browser tool that generates chord progressions from LΛMPLIGHT's Shasavistic music theory, plays them in just intonation, 41edo or 12edo, and explains note by note how to play them on conventional 12-tone instruments. The interface is available in Traditional Chinese, English and Japanese.
 
+**線上使用 / Live demo：<https://hikari-tsai.github.io/Semitone/>**
+
 > 這是依原作者公開資料所做的**非官方實作**。理論的解讀若有出入，以原作者為準。
 
 ## 功能
@@ -22,7 +24,9 @@ A browser tool that generates chord progressions from LΛMPLIGHT's Shasavistic m
 
 ## 執行
 
-這是純靜態網頁，不需要安裝或建置。在專案資料夾裡啟動任何靜態伺服器即可：
+最簡單的方式是直接開啟線上版：<https://hikari-tsai.github.io/Semitone/>。
+
+要在本機執行的話，這是純靜態網頁，不需要安裝或建置。在專案資料夾裡啟動任何靜態伺服器即可：
 
 ```bash
 python3 -m http.server 8765

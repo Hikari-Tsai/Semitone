@@ -77,9 +77,10 @@ const MODES = {
 };
 
 // ── 機能 ───────────────────────────────────────────────────
-const POS_SYMBOL = { "-2": "≪", "-1": "<", 0: "O", 1: ">", 2: "≫" };
-const POS_NAME = { "-2": "Schu", "-1": "Fu", 0: "Ah", 1: "Chy", 2: "Scy" };
-const VAR_SYMBOL = { ta: "", cra: "ᴗ", crana: "ɣ" };
+// 產生器只用 ±2 以內；±3 與 na 只在使用者自行輸入和弦時才會出現
+const POS_SYMBOL = { "-3": "⋘", "-2": "≪", "-1": "<", 0: "O", 1: ">", 2: "≫", 3: "⋙" };
+const POS_NAME = { "-3": "Ju", "-2": "Schu", "-1": "Fu", 0: "Ah", 1: "Chy", 2: "Scy", 3: "Xcy" };
+const VAR_SYMBOL = { ta: "", cra: "ᴗ", crana: "ɣ", na: "x" };
 
 // 由機能（位置 p、變形 v）求和弦。回傳 tones（向量）、bass（底音向量）與說明用資料。
 function buildChord(fn, G) {
@@ -100,6 +101,11 @@ function buildChord(fn, G) {
   if (fn.v === "ta") {
     return { symbol, name, tones: [R, add(R, H), add(R, G)], bass: R,
       chordonym: `’${harmononym(R)} – ${defName}`, klass: POS_SYMBOL[fn.p] };
+  }
+  if (fn.v === "na") {
+    // na：保留機能根與司音，把客音翻到另一側（3 次元時是同主音的小和弦）。原作者建議盡量少用
+    return { symbol, name, tones: [R, add(R, H), sub(add(R, H), G)], bass: R,
+      chordonym: `’${harmononym(R)} – AhChy${harmononym(sub(H, G))}`, klass: POS_SYMBOL[fn.p] };
   }
   const X = sub(add(R, G), H); // cra / crana 的新底音
   if (fn.v === "cra") {
@@ -161,6 +167,115 @@ function generateProgression(len, opt) {
     seq.push(opt.crana && Math.random() < 0.15 ? { p: 0, v: "crana" } : { p: 0, v: "ta" });
   }
   return seq;
+}
+
+// ── 使用者輸入的和弦 → 機能 ─────────────────────────────────
+// 接受三種寫法，可以混用：和弦名（C、Am、G7）、級數（I、vi、V7、bVII）、機能式（O、>v、<y、>+<）。
+// 和弦名與級數先換成「離主音幾個半音 + 大／小」，再查表找出對應的機能。
+// 查表以 3 次元為準；在 4 次元使用時，同一個機能會自動「轉寫」成 4 次元的和弦。
+const DEGREE = { I: 0, II: 2, III: 4, IV: 5, V: 7, VI: 9, VII: 11 };
+const LETTER = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+let nameTable = null; // "半音數:maj|min" → 機能（同名時取最簡單的解釋）
+function fnForChord(off, minor) {
+  if (!nameTable) {
+    nameTable = {};
+    const G3 = MODES["3"].G, pc = (v) => mod(Math.round(12 * jiClassLog(v)), 12);
+    const cands = [];
+    for (let p = -3; p <= 3; p++) for (const v of ["ta", "cra", "crana", "na"]) {
+      // 排序：離主音越近越優先；na 是原作者建議少用的變形，排在後面
+      cands.push({ fn: { p, v }, rank: Math.abs(p) + (v === "na" ? 1.5 : v === "crana" ? 0.5 : 0) });
+    }
+    cands.sort((x, y) => x.rank - y.rank);
+    for (const c of cands) {
+      const ch = buildChord(c.fn, G3);
+      const k = `${pc(ch.bass)}:${c.fn.v === "cra" || c.fn.v === "na" ? "min" : "maj"}`;
+      if (!(k in nameTable)) nameTable[k] = c.fn;
+    }
+  }
+  return nameTable[`${mod(off, 12)}:${minor ? "min" : "maj"}`] || null;
+}
+
+function parseFunctograph(tok) {
+  const x = tok.replace(/[\[\]]/g, "");
+  if (x === ">+<" || x === "O±" || x === "0±") return { p: 0, v: "pat" };
+  const m = /^(O|0|o|>{1,3}|<{1,3}|≫|≪|⋙|⋘)(ᴗ|v|u|ɣ|y|;|x)?$/.exec(x);
+  if (!m) return null;
+  const pos = { O: 0, 0: 0, o: 0, "≫": 2, "≪": -2, "⋙": 3, "⋘": -3 }[m[1]] ?? (m[1][0] === ">" ? m[1].length : -m[1].length);
+  const v = !m[2] ? "ta" : "ᴗvu".includes(m[2]) ? "cra" : m[2] === "x" ? "na" : "crana";
+  return { p: pos, v };
+}
+// 回傳 {off, minor, seventh, explicitMaj} 或 null
+function parseRoman(tok) {
+  const m = /^([b♭#♯]?)(VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i)(7)?$/.exec(tok);
+  if (!m) return null;
+  const acc = m[1] === "b" || m[1] === "♭" ? -1 : m[1] ? 1 : 0;
+  return { off: DEGREE[m[2].toUpperCase()] + acc, minor: m[2] === m[2].toLowerCase(), seventh: !!m[3] };
+}
+function parseChordName(tok, tonicPc) {
+  const m = /^([A-G])([#♯b♭]?)(maj|M|min|m|-)?(7)?$/.exec(tok);
+  if (!m) return null;
+  const acc = m[2] === "b" || m[2] === "♭" ? -1 : m[2] ? 1 : 0;
+  return { off: LETTER[m[1]] + acc - tonicPc, minor: ["min", "m", "-"].includes(m[3]), seventh: !!m[4], explicitMaj: m[3] === "maj" || m[3] === "M" };
+}
+// 回傳 { seq, unknown（看不懂的字）, unsupported（看得懂但目前無法表達的和弦） }
+function parseProgression(text, tonicPc) {
+  const seq = [], unknown = [], unsupported = [];
+  for (const tok of text.split(/[\s,|→、，]+/).filter((x) => x && x !== "-")) {
+    const fn = parseFunctograph(tok);
+    if (fn) { seq.push(fn); continue; }
+    const c = parseRoman(tok) || parseChordName(tok, tonicPc);
+    if (!c) { unknown.push(tok); continue; }
+    if (c.seventh) {
+      // 七和弦目前只支援「屬七」（主音上方完全五度的大和弦加小七度），對應挟み打ち
+      if (!c.minor && !c.explicitMaj && mod(c.off, 12) === 7) seq.push({ p: 0, v: "pat" });
+      else unsupported.push(tok);
+      continue;
+    }
+    const f = fnForChord(c.off, c.minor);
+    if (f) seq.push({ ...f }); else unsupported.push(tok);
+  }
+  return { seq, unknown, unsupported };
+}
+
+// ── 常見進行庫 ─────────────────────────────────────────────
+// 這些是流行音樂中廣為人知的進行，以級數寫成，再換成機能。名稱是通稱。
+const PROG_LIBRARY = [
+  { id: "axis", rn: "I V vi IV", name: { zh: "流行四和弦", en: "Axis progression", ja: "ポップパンク進行" } },
+  { id: "komuro", rn: "vi IV V I", name: { zh: "小室進行", en: "Komuro progression", ja: "小室進行" } },
+  { id: "epic", rn: "vi IV I V", name: { zh: "vi–IV–I–V", en: "vi–IV–I–V", ja: "vi–IV–I–V" } },
+  { id: "royal", rn: "IV V iii vi", name: { zh: "王道進行", en: "Royal road progression", ja: "王道進行" } },
+  { id: "fifties", rn: "I vi IV V", name: { zh: "50 年代進行", en: "50s progression", ja: "循環コード（50s 進行）" } },
+  { id: "turnaround", rn: "I vi ii V", name: { zh: "I–vi–ii–V 循環", en: "I–vi–ii–V turnaround", ja: "イチロクニーゴー" } },
+  { id: "circle", rn: "vi ii V7 I", name: { zh: "五度圈下行", en: "Circle of fifths", ja: "五度圏進行" } },
+  { id: "twofive", rn: "ii V7 I I", name: { zh: "ii–V–I", en: "ii–V–I", ja: "ツーファイブワン" } },
+  { id: "three", rn: "I IV V I", name: { zh: "三和弦終止", en: "I–IV–V–I", ja: "スリーコード" } },
+  { id: "rise", rn: "I iii IV V", name: { zh: "I–iii–IV–V", en: "I–iii–IV–V", ja: "I–iii–IV–V" } },
+  { id: "andalusian", rn: "vi V IV III", name: { zh: "安達魯西亞終止", en: "Andalusian cadence", ja: "アンダルシア進行" } },
+  { id: "marusa", rn: "IV III vi I", name: { zh: "丸之內進行", en: "Just the Two of Us progression", ja: "丸サ進行" } },
+  { id: "mixo", rn: "I bVII IV I", name: { zh: "Mixolydian 搖滾", en: "Mixolydian rock", ja: "ミクソリディアン進行" } },
+  { id: "minorplagal", rn: "I IV iv I", name: { zh: "小調變格", en: "Minor plagal", ja: "サブドミナントマイナー" } },
+  { id: "emo", rn: "vi V IV V", name: { zh: "vi–V–IV–V", en: "vi–V–IV–V", ja: "vi–V–IV–V" } },
+  { id: "ivfirst", rn: "IV I V vi", name: { zh: "IV–I–V–vi", en: "IV–I–V–vi", ja: "IV–I–V–vi" } },
+  { id: "canon", rn: "I V vi iii IV I IV V", name: { zh: "卡農進行", en: "Pachelbel's Canon", ja: "カノン進行" } },
+  { id: "axis8", rn: "I V vi IV I V IV V", name: { zh: "流行四和弦（八小節）", en: "Axis, 8-bar form", ja: "ポップパンク進行（8 小節）" } },
+  { id: "royal251", rn: "IV V iii vi ii V7 I I", name: { zh: "王道進行接 ii–V–I", en: "Royal road into ii–V–I", ja: "王道進行＋ツーファイブワン" } },
+].map((it) => ({ ...it, seq: null }));
+function librarySeq(item) {
+  if (!item.seq) item.seq = parseProgression(item.rn, 0).seq;
+  return item.seq.map((f) => ({ ...f }));
+}
+// 從進行庫湊出 len 個和弦。回傳 { seq, ids }（ids = 依序用到的進行）
+function libraryProgression(len) {
+  const seq = [], ids = [];
+  while (seq.length < len) {
+    const room = len - seq.length;
+    const fits = PROG_LIBRARY.filter((it) => it.rn.split(" ").length <= room && it.id !== ids[ids.length - 1]);
+    const item = (fits.length ? fits : PROG_LIBRARY)[Math.floor(Math.random() * (fits.length || PROG_LIBRARY.length))];
+    seq.push(...librarySeq(item).slice(0, room));
+    ids.push(item.id);
+  }
+  return { seq, ids };
 }
 
 // ── ボイシング：底音平順、上聲部聚攏並就近連接 ──────────────────
@@ -253,6 +368,6 @@ function howTo(dev, n12, instrument) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { MODES, buildChord, generateProgression, voiceProgression, tunedLog, harmononym, formula,
+  module.exports = { parseProgression, libraryProgression, PROG_LIBRARY, MODES, buildChord, generateProgression, voiceProgression, tunedLog, harmononym, formula,
     ratioClass, edo41Step, nearest12, chordName12, howTo, stability, kin, sub, key, isZero };
 }

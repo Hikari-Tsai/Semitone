@@ -72,6 +72,21 @@
   .timeline .node text { font: 600 13px ui-monospace, Menlo, monospace; fill: var(--ink); text-anchor: middle; }
   .timeline .node.sel rect { stroke: var(--accent); stroke-width: 2.4; }
   .timeline .node.playing rect { fill: var(--accent); stroke: var(--accent); }
+  .timeline .node.na rect { stroke: var(--d4); }
+  /* 播放中的反白跟著外框顏色：原形用主題色，ᴗ 綠、ɣ 橘、挟み打ち 粉紅、na 紫 */
+  .timeline .node.cra.playing rect { fill: var(--d3); stroke: var(--d3); }
+  .timeline .node.crana.playing rect { fill: var(--d5); stroke: var(--d5); }
+  .timeline .node.pat.playing rect { fill: var(--d2); stroke: var(--d2); }
+  .timeline .node.na.playing rect { fill: var(--d4); stroke: var(--d4); }
+  .timeline .node.cra.playing text, .timeline .node.crana.playing text, .timeline .node.pat.playing text, .timeline .node.na.playing text { fill: #1d1b26; }
+  .custom { margin-top: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+  .custom[hidden] { display: none; }
+  .customrow { display: flex; gap: 8px; }
+  .customrow input { flex: 1; min-width: 0; font: 15px ui-monospace, Menlo, monospace; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .custom .msg { margin: 6px 0 0; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+  .custom .msg.bad { color: var(--bad); }
+  .used { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
   .timeline .swapbtn { cursor: pointer; }
   .timeline .swapbtn circle { fill: var(--accent); stroke: var(--panel); stroke-width: 1.5; }
   .timeline .swapbtn text { fill: var(--accent-ink); font: 700 12px system-ui, sans-serif; text-anchor: middle; pointer-events: none; }
@@ -140,6 +155,8 @@
     <div><label for="mode"><span data-i18n="l.mode"></span></label><select id="mode"></select></div>
     <div><label for="len"><span data-i18n="l.len"></span></label>
       <select id="len"><option>4</option><option selected>8</option><option>12</option><option>16</option></select></div>
+    <div><label for="source"><span data-i18n="l.source"></span></label>
+      <select id="source"><option value="mix" data-i18n="src.mix" selected></option><option value="random" data-i18n="src.random"></option><option value="library" data-i18n="src.library"></option></select></div>
     <div><label for="tonic"><span data-i18n="l.tonic"></span></label><select id="tonic"></select></div>
     <div><label for="tuning"><span data-i18n="l.tuning"></span></label>
       <select id="tuning"><option value="ji" data-i18n="tuning.ji"></option><option value="edo41" data-i18n="tuning.edo41"></option><option value="edo12" data-i18n="tuning.edo12"></option></select></div>
@@ -177,6 +194,15 @@
       </div></div>
   </section>
 
+  <section class="custom" id="customBox">
+    <label for="custom"><span data-i18n="l.custom"></span></label>
+    <div class="customrow">
+      <input id="custom" type="text" autocomplete="off" spellcheck="false" data-i18n-ph="custom.ph">
+      <button id="apply" data-i18n="b.apply"></button>
+    </div>
+    <p class="msg" id="customMsg" aria-live="polite"></p>
+  </section>
+
   <div class="actions">
     <button class="primary" id="gen" data-i18n="b.gen"></button>
     <button id="play" data-i18n="b.play"></button>
@@ -187,6 +213,7 @@
   </div>
   <p class="note" id="tlTitle" style="margin:14px 0 -8px"><span data-i18n="tl.title"></span></p>
   <section class="timeline" id="timeline" data-i18n-aria="tl.title"></section>
+  <p class="used" id="usedProg" hidden></p>
   <p class="note" data-i18n="note"></p>
 
   <section class="cards" id="cards"></section>
@@ -214,7 +241,7 @@ for (const k of Object.keys(MODES)) { const o = new Option("", k); o.dataset.i18
 $("mode").value = "5f"; // 預設：5 次元（作者建議的 AhChyFuzi 配置）
 NOTE_NAMES.forEach((n, i) => $("tonic").add(new Option(n, i)));
 
-let state = { seq: [], chords: [], voiced: [], home: [], open: new Set(), sel: null }; // sel = 簡圖上選取的和弦
+let state = { seq: [], chords: [], voiced: [], home: [], label: [], open: new Set(), sel: null }; // label = 用到的常見進行 id // sel = 簡圖上選取的和弦
 let playToken = 0;
 
 const tonicMidi = () => { const pc = +$("tonic").value; return pc <= 6 ? 48 + pc : 36 + pc; }; // G2–F♯3
@@ -225,14 +252,41 @@ const targetTuning = () => ($("tuning").value === "edo41" ? "edo41" : "ji");
 // ── 產生 ──
 function generate() {
   stop();
-  const opt = { cra: $("oCra").checked, crana: $("oCrana").checked, pat: $("oPat").checked, range: $("oFar").checked ? 2 : 1 };
-  state.seq = generateProgression(+$("len").value, opt);
+  const len = +$("len").value, source = $("source").value;
+  if (source === "library" || (source === "mix" && Math.random() < 0.5)) {
+    const lib = libraryProgression(len); // 從常見進行庫湊出來
+    state.seq = lib.seq; state.label = lib.ids;
+  } else {
+    const opt = { cra: $("oCra").checked, crana: $("oCrana").checked, pat: $("oPat").checked, range: $("oFar").checked ? 2 : 1 };
+    state.seq = generateProgression(len, opt); state.label = [];
+  }
+  setSequence();
+}
+// 換上一整段新的進行後的共同收尾
+function setSequence() {
   state.home = state.seq.map((fn) => ({ ...fn })); // 每個位置原本的機能，用來判斷哪些算「代理」
   state.open.clear();
   state.sel = null;
   rebuild();
   saveState();
 }
+// ── 自行輸入和弦（3、4 次元） ──
+function applyCustom() {
+  const text = $("custom").value.trim(), msg = $("customMsg");
+  const say = (bad, key, vars) => { msg.classList.toggle("bad", bad); msg.textContent = t(key, vars); };
+  if (!text) return say(true, "custom.empty");
+  const r = parseProgression(text, +$("tonic").value);
+  const problems = [];
+  if (r.unknown.length) problems.push(t("custom.unknown", { list: r.unknown.join(" ") }));
+  if (r.unsupported.length) problems.push(t("custom.unsupported", { list: r.unsupported.join(" ") }));
+  if (!r.seq.length) { msg.classList.add("bad"); msg.textContent = problems.join(" "); return; }
+  stop();
+  state.seq = r.seq; state.label = [];
+  setSequence();
+  msg.classList.toggle("bad", problems.length > 0);
+  msg.textContent = [t("custom.ok", { n: r.seq.length }), $("mode").value === "4" ? t("custom.translated") : "", ...problems].filter(Boolean).join(" ");
+}
+function showCustomBox() { $("customBox").hidden = !["3", "4"].includes($("mode").value); }
 function rebuild() {
   const G = MODES[$("mode").value].G;
   state.chords = state.seq.map((fn) => buildChord(fn, G));
@@ -245,6 +299,7 @@ function roleText(fn) {
   if (fn.v === "pat") return t("role.pat");
   if (fn.v === "ta") return t("role.p" + fn.p);
   if (fn.v === "cra") return t("role.cra", { name: POS_NAME[fn.p] });
+  if (fn.v === "na") return t("role.na", { name: POS_NAME[fn.p] });
   return fn.p === 0 ? t("role.crana0") : t("role.crana", { name: POS_NAME[fn.p] });
 }
 function moveText(i) {
@@ -316,6 +371,9 @@ function renderTimeline() {
       <title>${esc(t("card.swap"))}</title><circle cx="${x}" cy="${y}" r="9.5"/><text x="${x}" y="${y + 4.2}">↻</text></g>`;
   }
   $("timeline").innerHTML = s + "</svg>";
+  const names = state.label.map((id) => PROG_LIBRARY.find((it) => it.id === id)).filter(Boolean).map((it) => it.name[LANG] || it.name.en);
+  $("usedProg").hidden = !names.length;
+  $("usedProg").textContent = names.length ? t("used", { list: names.join(" ＋ ") }) : "";
 }
 // frac：目前播放到第幾個和弦（可帶小數）；null 表示隱藏指針
 function setPlayhead(frac) {
@@ -713,6 +771,8 @@ function exportMidi() {
 // ── 「?」說明 ──
 const helpIcon = (k) => `<span class="help" tabindex="0" role="button" aria-label="${esc(t("aria.help"))}" data-help="${k}">?</span>`;
 function addHelp(el, k, where = "beforeend") { if (el) el.insertAdjacentHTML(where, helpIcon(k)); }
+addHelp(document.querySelector('label[for="source"]'), "source");
+addHelp(document.querySelector('label[for="custom"]'), "custom");
 for (const k of ["mode", "len", "tonic", "tuning", "instrument", "timbre", "rhythm", "drums", "drumVol", "bpm", "sigNum", "bars"])
   addHelp(document.querySelector(`label[for="${k}"]`), k);
 addHelp($("optsLabel"), "optsLabel");
@@ -754,7 +814,9 @@ $("export").onclick = exportMidi;
 ["bpm", "sigNum", "sigDen", "bars"].forEach((id) => $(id).addEventListener("input", showDur));
 $("drumVol").addEventListener("input", setDrumVolume);
 showDur();
-["mode"].forEach((id) => ($(id).onchange = () => { stop(); rebuild(); }));
+["mode"].forEach((id) => ($(id).onchange = () => { stop(); showCustomBox(); rebuild(); }));
+$("apply").onclick = applyCustom;
+$("custom").addEventListener("keydown", (e) => { if (e.key === "Enter") applyCustom(); });
 ["tonic", "tuning", "instrument"].forEach((id) => ($(id).onchange = render));
 // 字卡：點標題展開／收合；點 ▶ 只試聽、不展開
 $("cards").addEventListener("click", (e) => {
@@ -825,6 +887,7 @@ function applyLang() {
   document.querySelectorAll("#lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
   document.querySelectorAll(".help[data-help]").forEach((h) => h.setAttribute("aria-label", t("aria.help")));
   showDur();
+  $("customMsg").textContent = "";
   if (state.chords.length) render(); // 字卡與簡圖的文字是動態產生的，要重畫
 }
 $("lang").innerHTML = Object.entries(LANGS).map(([k, name]) => `<button type="button" data-lang="${k}" lang="${HTML_LANG[k]}">${name}</button>`).join("");
@@ -838,7 +901,7 @@ applyLang();
 
 // ── 記住上次的設定與進行 ──
 // 存在瀏覽器的 localStorage（只留在這台裝置的這個瀏覽器裡，不會傳到任何伺服器）。
-const FIELDS = ["mode", "len", "tonic", "tuning", "instrument", "timbre", "rhythm", "drums", "drumVol", "bpm", "sigNum", "sigDen", "bars"];
+const FIELDS = ["mode", "len", "source", "custom", "tonic", "tuning", "instrument", "timbre", "rhythm", "drums", "drumVol", "bpm", "sigNum", "sigDen", "bars"];
 const CHECKS = ["oCra", "oCrana", "oPat", "oFar", "oArp", "oLoop", "oMetro", "oCount"];
 const STORE_KEY = "semitone.state";
 function readSettings() {
@@ -856,10 +919,10 @@ function writeSettings(o) {
   for (const id of CHECKS) if (typeof o[id] === "boolean") $(id).checked = o[id];
 }
 const DEFAULTS = readSettings(); // 此時畫面上還是出廠預設值，先記下來給「恢復預設值」用
-const validFn = (f) => f && Number.isInteger(f.p) && Math.abs(f.p) <= 2 && ["ta", "cra", "crana", "pat"].includes(f.v);
+const validFn = (f) => f && Number.isInteger(f.p) && Math.abs(f.p) <= 3 && ["ta", "cra", "crana", "na", "pat"].includes(f.v);
 function saveState() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, settings: readSettings(), seq: state.seq, home: state.home }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, settings: readSettings(), seq: state.seq, home: state.home, label: state.label }));
   } catch (e) { /* 無法寫入（例如無痕模式）時略過 */ }
 }
 // 成功還原上次的進行時回傳 true
@@ -869,22 +932,28 @@ function restoreState() {
   if (!saved || saved.v !== 1 || !saved.settings) return false;
   writeSettings(saved.settings);
   showDur();
+  showCustomBox();
   if (!Array.isArray(saved.seq) || !saved.seq.length || !saved.seq.every(validFn)) return false;
   state.seq = saved.seq.map((f) => ({ p: f.p, v: f.v }));
   const home = Array.isArray(saved.home) && saved.home.length === state.seq.length && saved.home.every(validFn) ? saved.home : state.seq;
   state.home = home.map((f) => ({ p: f.p, v: f.v }));
+  state.label = Array.isArray(saved.label) ? saved.label.filter((x) => typeof x === "string") : [];
   rebuild();
   return true;
 }
 function resetDefaults() {
   writeSettings(DEFAULTS);
   showDur();
+  showCustomBox();
+  $("customMsg").textContent = "";
   generate(); // 用預設值重新生成，並覆蓋掉先前儲存的內容
 }
 document.querySelector(".controls").addEventListener("input", saveState);
 document.querySelector(".controls").addEventListener("change", saveState);
+$("custom").addEventListener("input", saveState);
 $("reset").onclick = resetDefaults;
 
+showCustomBox();
 if (!restoreState()) generate();
 </script>
 </body>

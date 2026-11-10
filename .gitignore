@@ -1,0 +1,6 @@
+# 爬取的原始資料：著作權屬於 LΛMPLIGHT 與各原作者，只供本機研讀，不得公開
+sources/
+
+# 本機工具設定
+.claude/
+.DS_Store

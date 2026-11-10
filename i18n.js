@@ -30,7 +30,7 @@ const I18N = {
     "o.cra": "cra（ᴗ）", "o.crana": "crana（ɣ）", "o.pat": "挟み打ち", "o.far": "走到 ≪ ≫", "o.arp": "琶音", "o.loop": "循環播放", "o.metro": "節拍器", "o.count": "預備拍一小節",
 
     "b.gen": "生成", "b.reset": "恢復預設值", "b.play": "▶ 播放", "b.stop": "■ 停止", "kbd": "空白鍵：播放／停止", "b.export": "⬇ 匯出 MIDI", "b.expand": "全部展開", "b.collapse": "全部收合",
-    "tl.title": "和弦進行簡圖", "note": "點簡圖上的和弦可以試聽，右上角的 ↻ 會依序換成這個位置的其他和弦，右下角的 ▾ 可以從清單直接挑；雙擊和弦可以直接打字修改；點字卡標題展開細節，點 ▶ 只試聽。看不懂的地方把滑鼠移到圈圈 ? 上。",
+    "tl.title": "和弦進行簡圖", "note": "點簡圖上的和弦可以試聽，右上角的 ↻ 會依序換成這個位置的其他和弦，右下角的 ▾ 可以從清單直接挑；上下拖曳和弦，或選取後按 ↑ ↓，可以把它移到別的機能位（← → 改選前後的和弦）；雙擊和弦或下方的和弦名可以直接打字修改；點字卡標題展開細節，點 ▶ 只試聽。看不懂的地方把滑鼠移到圈圈 ? 上。",
 
     "card.chord": "和弦 {n}", "card.approx": "12 平均律 ≈ {name}", "card.bass": "底音", "card.closest": "12 平均律最接近：", "card.refOnly": "（僅供參考）",
     "card.swap": "換成這個位置的其他和弦", "card.pick": "從清單選擇這個位置的和弦", "card.subs": "同機能的代理：", "card.others": "其他合理的和弦：",
@@ -106,7 +106,7 @@ const I18N = {
     "help.export": "下載成 MIDI 檔，可匯入編曲軟體（DAW）。\nMIDI 的音符只能是 12 平均律，所以每個音前面會加上「彎音」（pitch bend）把音高修正到你選的調律。彎音是整個通道共用的，因此每個聲部各佔一個通道（1–5），鼓在第 10 通道。\n匯入後請讓各通道用同一個音色，並確認音源的彎音範圍是 ±2 個半音。",
     "help.toggleAll": "一次展開或收合下面所有和弦的字卡。",
     "help.reset": "把上面所有設定改回一開始的預設值，並重新生成一段進行。\n平常你的設定和目前的進行會自動記在這個瀏覽器裡，重新整理或下次再開都還在；按這個按鈕就會清掉它們。語言設定不受影響。",
-    "help.timeline": "整段進行的地圖。橫向是時間；縱向是和弦離「家」多遠：中間虛線是主和弦 [O]，往上是屬方向 [>]，往下是下屬方向 [<]。框內是機能記號，下方是最接近的一般和弦名。點任一個可試聽，並出現兩個小按鈕：右上角的 ↻ 依序換成這個位置的其他和弦，右下角的 ▾ 打開清單讓你直接挑（分成同機能的代理與其他合理的和弦）。\n雙擊和弦（或它下方的和弦名）會出現輸入框，可以直接打你要的和弦：和弦名（Am）、級數（vi）或機能式（Ov）都可以。Enter 套用，Esc 取消。",
+    "help.timeline": "整段進行的地圖。橫向是時間；縱向是和弦離「家」多遠：中間虛線是主和弦 [O]，往上是屬方向 [>]，往下是下屬方向 [<]。框內是機能記號，下方是最接近的一般和弦名。點任一個可試聽，並出現兩個小按鈕：右上角的 ↻ 依序換成這個位置的其他和弦，右下角的 ▾ 打開清單讓你直接挑（分成同機能的代理與其他合理的和弦）。\n雙擊和弦（或它下方的和弦名）會出現輸入框，可以直接打你要的和弦：和弦名（Am）、級數（vi）或機能式（Ov）都可以。Enter 套用，Esc 取消。\n也可以直接搬動和弦：按住和弦上下拖曳，或選取後按 ↑ ↓，它會移到上／下一個機能位並保留原本的色彩（ᴗ、ɣ）；← → 改選前一個或後一個和弦，Esc 取消選取。",
     "help.stability": "這個和弦聽起來多安穩。含主音且主音在最低＝安定；含主音但不在最低＝半安定；不含主音＝不安定，會想往別處走。",
     "help.colNote": "每個音相對主音的名字（這套理論的唱名）。下面小字依序是：座標寫法、頻率比、在 41 平均律裡是第幾步。",
     "help.subs": "這些和弦在這個位置可以互相替代，因為它們屬於同一個「機能類」：離主和弦的距離相同，只是色彩不同（原形、陰的版本 ᴗ、瞬間換色的 ɣ）。屬的位置還可以換成挟み打ち [>+<]（3 次元時是屬七）。\n點任一個就會換上並試聽；標題列的 ↻ 會依序輪替（先代理，再輪到其他合理的和弦）。換了之後整段的聲部配置會重新計算。",
@@ -140,7 +140,7 @@ const I18N = {
     "o.cra": "cra (ᴗ)", "o.crana": "crana (ɣ)", "o.pat": "Sandwiching", "o.far": "Go out to ≪ ≫", "o.arp": "Arpeggiate", "o.loop": "Loop", "o.metro": "Metronome", "o.count": "One-bar count-in",
 
     "b.gen": "Generate", "b.reset": "Reset to defaults", "b.play": "▶ Play", "b.stop": "■ Stop", "kbd": "Space: play / stop", "b.export": "⬇ Export MIDI", "b.expand": "Expand all", "b.collapse": "Collapse all",
-    "tl.title": "Progression map", "note": "Click a chord on the map to hear it; ↻ at its top-right cycles through other chords that fit that position, and ▾ at its bottom-right lets you pick one from a list. Double-click a chord to type a replacement. Click a card header for details, or ▶ to just listen. Hover over any circled ? for an explanation.",
+    "tl.title": "Progression map", "note": "Click a chord on the map to hear it; ↻ at its top-right cycles through other chords that fit that position, and ▾ at its bottom-right lets you pick one from a list. Drag a chord up or down, or select it and press ↑ ↓, to move it to another function position (← → select the neighbouring chord). Double-click a chord, or the chord name under it, to type a replacement. Click a card header for details, or ▶ to just listen. Hover over any circled ? for an explanation.",
 
     "card.chord": "Chord {n}", "card.approx": "12edo ≈ {name}", "card.bass": "base note", "card.closest": "Closest in 12edo: ", "card.refOnly": " (rough guide only)",
     "card.swap": "Swap for another chord that fits this position", "card.pick": "Choose a chord for this position from a list", "card.subs": "Same-function substitutes:", "card.others": "Other chords that fit:",
@@ -216,7 +216,7 @@ const I18N = {
     "help.export": "Downloads a MIDI file you can import into a DAW.\nMIDI note numbers can only be 12edo, so a pitch bend is sent before each note to correct it to the tuning you selected. Pitch bend applies to a whole channel, so each voice gets its own channel (1–5); drums are on channel 10.\nAfter importing, give all channels the same sound and make sure the instrument's bend range is ±2 semitones.",
     "help.toggleAll": "Expands or collapses all the chord cards below at once.",
     "help.reset": "Puts every setting above back to its original default and generates a fresh progression.\nNormally your settings and the current progression are remembered in this browser, so they survive a reload or a later visit; this button clears them. The language choice is not affected.",
-    "help.timeline": "A map of the whole progression. Horizontal is time; vertical is how far a chord is from home: the dashed middle line is the tonic chord [O], up is the dominant side [>], down is the subdominant side [<]. Each box shows the functograph, with the nearest ordinary chord name underneath. Click any chord to hear it and to reveal two small buttons: ↻ at the top-right cycles through other chords for that position, and ▾ at the bottom-right opens a list to pick from directly (same-function substitutes, then other chords that fit).\nDouble-click a chord (or the chord name under it) to open a text box and type the chord you want: a chord name (Am), a Roman numeral (vi) or a functograph (Ov). Enter applies, Esc cancels.",
+    "help.timeline": "A map of the whole progression. Horizontal is time; vertical is how far a chord is from home: the dashed middle line is the tonic chord [O], up is the dominant side [>], down is the subdominant side [<]. Each box shows the functograph, with the nearest ordinary chord name underneath. Click any chord to hear it and to reveal two small buttons: ↻ at the top-right cycles through other chords for that position, and ▾ at the bottom-right opens a list to pick from directly (same-function substitutes, then other chords that fit).\nDouble-click a chord (or the chord name under it) to open a text box and type the chord you want: a chord name (Am), a Roman numeral (vi) or a functograph (Ov). Enter applies, Esc cancels.\nYou can also move a chord directly: drag it up or down, or select it and press ↑ ↓, and it shifts to the next function position while keeping its colour (ᴗ, ɣ). ← → select the previous or next chord, and Esc clears the selection.",
     "help.stability": "How settled the chord sounds. Tonic present and lowest = stable; present but not lowest = semi-stable; absent = unstable, wanting to move on.",
     "help.colNote": "The name of each note relative to the tonic (the theory's solmization). The small print shows, in order: the coordinate formula, the frequency ratio, and the step number in 41edo.",
     "help.subs": "These chords can stand in for one another here because they belong to the same functional type: the same distance from the tonic chord, with a different colour (the plain form, the dark version ᴗ, the instant colour change ɣ). The dominant position can also take the sandwiching chord [>+<] (a dominant seventh in 3D).\nClick one to swap it in and hear it; the ↻ in the header cycles through them (substitutes first, then the other chords that fit). The voicing of the whole progression is recalculated after a swap.",
@@ -250,7 +250,7 @@ const I18N = {
     "o.cra": "cra（ᴗ）", "o.crana": "crana（ɣ）", "o.pat": "挟み打ち", "o.far": "≪ ≫ まで進む", "o.arp": "アルペジオ", "o.loop": "ループ再生", "o.metro": "メトロノーム", "o.count": "1 小節のカウントイン",
 
     "b.gen": "生成", "b.reset": "初期設定に戻す", "b.play": "▶ 再生", "b.stop": "■ 停止", "kbd": "スペースキー：再生／停止", "b.export": "⬇ MIDI を書き出す", "b.expand": "すべて開く", "b.collapse": "すべて閉じる",
-    "tl.title": "コード進行の略図", "note": "略図の和音をクリックすると試聴でき、右上の ↻ でその位置に合う別の和音へ順に入れ替え、右下の ▾ で一覧から直接選べます。和音をダブルクリックすると直接入力して変更できます。カードの見出しをクリックすると詳細が開き、▶ は試聴だけを行います。わからない項目は丸い ? にマウスを重ねてください。",
+    "tl.title": "コード進行の略図", "note": "略図の和音をクリックすると試聴でき、右上の ↻ でその位置に合う別の和音へ順に入れ替え、右下の ▾ で一覧から直接選べます。和音を上下にドラッグするか、選択して ↑ ↓ を押すと、別の機能位へ移動できます（← → で前後の和音を選択）。和音やその下のコード名をダブルクリックすると直接入力して変更できます。カードの見出しをクリックすると詳細が開き、▶ は試聴だけを行います。わからない項目は丸い ? にマウスを重ねてください。",
 
     "card.chord": "和音 {n}", "card.approx": "12 平均律 ≈ {name}", "card.bass": "底音", "card.closest": "12 平均律で最も近い和音：", "card.refOnly": "（参考程度）",
     "card.swap": "この位置に合う別の和音に入れ替える", "card.pick": "この位置の和音を一覧から選ぶ", "card.subs": "同じ機能の代理和音：", "card.others": "そのほかの合う和音：",
@@ -326,7 +326,7 @@ const I18N = {
     "help.export": "MIDI ファイルをダウンロードします。DAW に読み込めます。\nMIDI のノート番号は 12 平均律しか表せないため、各音の前にピッチベンドを送り、選んだ調律に補正します。ピッチベンドはチャンネル全体に効くので、声部ごとに 1 チャンネル（1〜5）を使い、ドラムは 10 チャンネルです。\n読み込んだら全チャンネルを同じ音色にし、音源のベンドレンジが ±2 半音であることを確認してください。",
     "help.toggleAll": "下の和音カードをまとめて開閉します。",
     "help.reset": "上のすべての設定を最初の初期値に戻し、新しい進行を生成します。\n通常、設定と現在の進行はこのブラウザに自動で保存され、再読み込みしても次回開いても残ります。このボタンを押すとそれらが消去されます。言語の設定は変わりません。",
-    "help.timeline": "進行全体の地図です。横が時間、縦が「ホーム」からの距離を表します。中央の破線が主和音 [O]、上が属の方向 [>]、下が下属の方向 [<] です。枠の中は機能式、下は最も近い一般的なコード名です。クリックすると試聴でき、小さなボタンが 2 つ現れます。右上の ↻ はその位置の和音を順に入れ替え、右下の ▾ は一覧を開いて直接選べます（同じ機能の代理和音と、そのほかの合う和音）。\n和音（またはその下のコード名）をダブルクリックすると入力欄が開き、コード名（Am）、ディグリー（vi）、機能式（Ov）のいずれかで直接指定できます。Enter で適用、Esc で取り消します。",
+    "help.timeline": "進行全体の地図です。横が時間、縦が「ホーム」からの距離を表します。中央の破線が主和音 [O]、上が属の方向 [>]、下が下属の方向 [<] です。枠の中は機能式、下は最も近い一般的なコード名です。クリックすると試聴でき、小さなボタンが 2 つ現れます。右上の ↻ はその位置の和音を順に入れ替え、右下の ▾ は一覧を開いて直接選べます（同じ機能の代理和音と、そのほかの合う和音）。\n和音（またはその下のコード名）をダブルクリックすると入力欄が開き、コード名（Am）、ディグリー（vi）、機能式（Ov）のいずれかで直接指定できます。Enter で適用、Esc で取り消します。\n和音を直接動かすこともできます。和音を上下にドラッグするか、選択して ↑ ↓ を押すと、色合い（ᴗ、ɣ）を保ったまま隣の機能位へ移ります。← → で前後の和音を選択し、Esc で選択を解除します。",
     "help.stability": "和音がどれだけ落ち着いて聞こえるかです。主音を含み、主音が最低音＝安定。含むが最低音でない＝半安定。含まない＝不安定で、ほかへ進みたがります。",
     "help.colNote": "主音から見た各音の名前（この理論の音名）です。小さい文字は順に、座標の式、周波数比、41 平均律での何番目の音か、を示します。",
     "help.subs": "これらの和音は同じ「機能類」に属するため、この位置で互いに代用できます。主和音からの距離は同じで、色合いだけが異なります（原形、陰の形 ᴗ、一瞬で色が変わる ɣ）。属の位置では挟み打ち [>+<]（3 次元では属七）にも入れ替えられます。\nクリックすると入れ替わり、試聴できます。見出しの ↻ は順番に切り替えます（先に代理和音、続いてそのほかの合う和音）。入れ替えると進行全体の声部配置が計算し直されます。",

@@ -92,7 +92,10 @@
   .custom .msg { margin: 6px 0 0; font-size: 13px; color: var(--muted); min-height: 1.4em; }
   .custom .msg.bad { color: var(--bad); }
   .used { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
-  .timeline .n12 { cursor: pointer; }
+  .timeline .n12 { cursor: text; }
+  .timeline svg { user-select: none; -webkit-user-select: none; }
+  .timeline .node { touch-action: pan-x; } /* 上下拖曳交給我們處理，左右仍可捲動 */
+  body.tl-dragging, body.tl-dragging .timeline .node { cursor: ns-resize; }
   .tl-menu { position: absolute; z-index: 6; width: 20px; height: 20px; border-radius: 50%; background: var(--accent);
     color: var(--accent-ink); border: 1.5px solid var(--panel); display: flex; align-items: center; justify-content: center;
     font: 700 11px/1 system-ui, sans-serif; }
@@ -905,28 +908,48 @@ $("toggleAll").onclick = () => {
 // 簡圖：點和弦＝選取並試聽，右上角出現 ↻；點 ↻＝換成下一個代理和弦。不會動到下方字卡的開合
 function timelineAction(e) {
   const target = e.target;
-  if (target.closest(".tl-edit, .tl-menu")) return;
+  if (suppressClick || target.closest(".tl-edit, .tl-menu")) return;
   const swap = target.closest(".swapbtn");
   if (swap) { swapChord(+swap.dataset.swap); return; }
   const node = target.closest(".node") || target.closest(".n12");
   if (!node) return;
   const i = +node.dataset.i;
-  if (e.detail >= 2) { startEdit(i); return; } // 雙擊：直接輸入要換成的和弦
+  if (e.detail >= 2) { startEdit(i, !!target.closest(".n12")); return; } // 雙擊：直接輸入要換成的和弦
   state.sel = i;
   renderTimeline();
   audition(i);
 }
 // 在簡圖上就地編輯第 i 個和弦。可輸入和弦名、級數或機能式，Enter 套用、Esc 取消
-function startEdit(i) {
+// 手動把第 i 個位置指定成某個和弦（打字、拖曳、方向鍵共用）
+function setChordAt(i, fn) {
+  if (!fn || sameFn(fn, state.seq[i])) return;
+  state.seq[i] = { ...fn };
+  state.home[i] = { ...fn }; // 手動指定的和弦成為這個位置新的基準
+  state.label = [];
+  state.sel = i;
+  rebuild();
+  saveState();
+  audition(i);
+}
+// 把和弦沿縱軸移到機能位 p（保留 ta／cra／crana 的色彩；挟み打ち離開原位後變成一般和弦）
+const clampPos = (p) => Math.max(-3, Math.min(3, p));
+function moveChordTo(i, p, orig) {
+  const cur = state.seq[i];
+  p = clampPos(p);
+  if (orig && p === orig.p) return setChordAt(i, orig); // 拖回原位：還原成原本的和弦
+  setChordAt(i, { p, v: cur.v === "pat" ? "ta" : cur.v });
+}
+// byName：從下方的和弦名開始編輯，輸入框放在和弦名上並預填和弦名
+function startEdit(i, byName) {
   document.querySelector(".tl-edit")?.remove();
-  const box = $("timeline"), node = box.querySelector(`.node[data-i="${i}"]`);
+  const box = $("timeline"), node = box.querySelector(`.${byName ? "n12" : "node"}[data-i="${i}"]`);
   if (!node) return;
   const r = node.getBoundingClientRect(), b = box.getBoundingClientRect();
   const input = document.createElement("input");
   input.className = "tl-edit";
   input.type = "text"; input.autocomplete = "off"; input.spellcheck = false;
   input.setAttribute("aria-label", t("edit.label", { n: i + 1 }));
-  input.value = state.chords[i].symbol.replace(/[\[\]]/g, "");
+  input.value = byName ? name12Of(i) : state.chords[i].symbol.replace(/[\[\]]/g, "");
   input.style.left = (r.left - b.left + box.scrollLeft + r.width / 2 - 46) + "px";
   input.style.top = (r.top - b.top + box.scrollTop + r.height / 2 - 13) + "px";
   let done = false;
@@ -935,26 +958,65 @@ function startEdit(i) {
     ev.stopPropagation();
     if (ev.key === "Escape") return close();
     if (ev.key !== "Enter") return input.classList.remove("bad");
-    const parsed = parseProgression(input.value.trim(), +$("tonic").value);
+    const text = input.value.trim().replace(/\/[A-G][#♯b♭]?$/, ""); // 「C/E」這類轉位寫法只看和弦本身
+    const parsed = parseProgression(text, +$("tonic").value);
     if (parsed.seq.length !== 1 || parsed.unknown.length || parsed.unsupported.length) {
       input.classList.remove("bad"); void input.offsetWidth; input.classList.add("bad"); // 重新觸發晃動
       input.title = t("edit.bad");
       return;
     }
     close();
-    state.seq[i] = parsed.seq[0];
-    state.home[i] = { ...parsed.seq[0] }; // 手動指定的和弦成為這個位置新的基準
-    state.label = [];
-    state.sel = i;
-    rebuild();
-    saveState();
-    audition(i);
+    if (sameFn(parsed.seq[0], state.seq[i])) { state.sel = i; renderTimeline(); return; }
+    setChordAt(i, parsed.seq[0]);
   });
   input.addEventListener("blur", close);
   box.appendChild(input);
   input.focus(); input.select();
 }
 $("timeline").addEventListener("click", timelineAction);
+// 上下拖曳和弦：每跨過一列就換到那個機能位並試聽。重畫會換掉 SVG 元素，所以監聽掛在 window 上
+let drag = null, suppressClick = false;
+$("timeline").addEventListener("pointerdown", (e) => {
+  const node = e.button ? null : e.target.closest(".node");
+  const svg = $("timeline").querySelector("svg");
+  if (!node || !svg) return;
+  const i = +node.dataset.i;
+  drag = { i, id: e.pointerId, y: e.clientY, orig: { ...state.seq[i] }, moved: false,
+    rowPx: TL.rowH * svg.getBoundingClientRect().width / svg.viewBox.baseVal.width };
+});
+window.addEventListener("pointermove", (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (!drag.moved && Math.abs(e.clientY - drag.y) < 6) return; // 小幅晃動算點擊
+  if (!drag.moved) { drag.moved = true; document.body.classList.add("tl-dragging"); document.querySelector(".tl-edit")?.remove(); }
+  const want = clampPos(drag.orig.p + Math.round((drag.y - e.clientY) / drag.rowPx));
+  if (want !== state.seq[drag.i].p || (want === drag.orig.p && !sameFn(state.seq[drag.i], drag.orig))) moveChordTo(drag.i, want, drag.orig);
+});
+const endDrag = (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (drag.moved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); } // 放開時不要再當成一次點擊
+  document.body.classList.remove("tl-dragging");
+  drag = null;
+};
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", endDrag);
+// 方向鍵：↑↓ 把選取的和弦移到上／下一個機能位；←→ 改選前／後一個和弦；Esc 取消選取
+document.addEventListener("keydown", (e) => {
+  if (state.sel == null || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest?.("input, select, textarea, [contenteditable]")) return;
+  const i = state.sel;
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+    e.preventDefault();
+    moveChordTo(i, state.seq[i].p + (e.key === "ArrowUp" ? 1 : -1));
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    e.preventDefault();
+    const j = i + (e.key === "ArrowRight" ? 1 : -1);
+    if (j < 0 || j >= state.seq.length) return;
+    state.sel = j;
+    renderTimeline();
+    $("timeline").querySelector(`.node[data-i="${j}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    audition(j);
+  } else if (e.key === "Escape") { state.sel = null; renderTimeline(); }
+});
 window.addEventListener("resize", () => { if (state.sel != null) renderTimeline(); }); // 選單是疊在圖上的，視窗大小改變要重新定位
 $("timeline").addEventListener("keydown", (e) => {
   if ((e.key === "Enter" || e.key === " ") && e.target.closest(".swapbtn")) {

@@ -30,10 +30,11 @@ const I18N = {
     "o.cra": "cra（ᴗ）", "o.crana": "crana（ɣ）", "o.pat": "挟み打ち", "o.far": "走到 ≪ ≫", "o.arp": "琶音", "o.loop": "循環播放", "o.metro": "節拍器", "o.count": "預備拍一小節",
 
     "b.gen": "產生新的進行", "b.play": "▶ 播放", "b.stop": "■ 停止", "b.export": "⬇ 匯出 MIDI", "b.expand": "全部展開", "b.collapse": "全部收合",
-    "tl.title": "和弦進行簡圖", "note": "點簡圖上的和弦可以試聽並跳到它的字卡；點字卡標題展開細節，點 ▶ 只試聽。看不懂的地方把滑鼠移到圈圈 ? 上。",
+    "tl.title": "和弦進行簡圖", "note": "點簡圖上的和弦可以試聽，右上角會出現 ↻，按它就換成這個位置的其他代理和弦；點字卡標題展開細節，點 ▶ 只試聽。看不懂的地方把滑鼠移到圈圈 ? 上。",
 
     "card.chord": "和弦 {n}", "card.approx": "12 平均律 ≈ {name}", "card.bass": "底音", "card.closest": "12 平均律最接近：", "card.refOnly": "（僅供參考）",
     "card.swap": "換成這個位置的其他代理和弦", "card.subs": "這個位置可以用：",
+    "star": "賞我星星",
     "th.note": "音（由低到高）", "th.12": "12 平均律", "th.dev": "偏差", "th.how": "在你的樂器上",
     "st.stable": "安定", "st.semi": "半安定", "st.unstable": "不安定",
     "v.exact": "12 平均律可以完全表達這個和弦。", "v.close": "12 平均律很接近；微調後會更純、拍音更少。",
@@ -69,7 +70,7 @@ const I18N = {
 <li><b>ハーモニム</b>：每個音相對主音的座標唱名。Chy = 2 次元上昇、Fu = 2 次元下降、Ly/Su = 3 次元、My/Pu = 4 次元、Zy/Tschu = 5 次元，連寫表示相乘（Chyli = 15/8）。</li>
 <li><b>安定度</b>：和弦含主音且主音在最低 = 安定；含主音但不在最低 = 半安定；不含主音 = 不安定。</li>
 <li><b>小格子圖</b>：橫向是 2 次元（右 = 上昇），縱向是客次元（上 = 上昇）。空心框是主音的位置，實心格是這個和弦用到的音，三角標記底音。</li>`,
-    "footer.html": `理論：LΛMPLIGHT 的シャサフ式音楽理論（<a href="https://lamplight0.sakura.ne.jp/a/" target="_blank" rel="noopener">官網</a>）。本頁是依其公開資料所做的非官方實作，解讀若有出入以原作者為準。聲音：<a href="https://github.com/Tonejs/Tone.js" target="_blank" rel="noopener">Tone.js</a>（MIT）。`,
+    "footer.html": `理論：LΛMPLIGHT 的シャサフ式音楽理論（<a href="https://lamplight0.sakura.ne.jp/a/" target="_blank" rel="noopener">官網</a>）。本頁是依其公開資料所做的非官方實作，解讀若有出入以原作者為準。聲音：<a href="https://github.com/Tonejs/Tone.js" target="_blank" rel="noopener">Tone.js</a>（MIT）。<br>作者：<a href="https://github.com/Hikari-Tsai" target="_blank" rel="noopener">Hikari Tsai</a>　·　<a href="https://github.com/Hikari-Tsai/Semitone" target="_blank" rel="noopener">原始碼</a>（MIT 授權）`,
 
     "help.mode": "決定和弦用哪一種「色彩音」。\n• 3 次元：一般的大三和弦（Do-Mi-Sol），最熟悉。\n• 4 次元：把 Mi 換成第 7 泛音，帶藍調、懸浮的感覺。\n• 5 次元：換成第 11 泛音，落在鋼琴兩個鍵的正中間，最「異世界」。\n骨架永遠是完全五度（2 次元），只有色彩音會變。",
     "help.len": "這段進行總共有幾個和弦。",
@@ -95,7 +96,7 @@ const I18N = {
     "help.gen": "依上面的設定隨機產生一段新的和弦進行。每次按都不一樣。",
     "help.export": "下載成 MIDI 檔，可匯入編曲軟體（DAW）。\nMIDI 的音符只能是 12 平均律，所以每個音前面會加上「彎音」（pitch bend）把音高修正到你選的調律。彎音是整個通道共用的，因此每個聲部各佔一個通道（1–5），鼓在第 10 通道。\n匯入後請讓各通道用同一個音色，並確認音源的彎音範圍是 ±2 個半音。",
     "help.toggleAll": "一次展開或收合下面所有和弦的字卡。",
-    "help.timeline": "整段進行的地圖。橫向是時間；縱向是和弦離「家」多遠：中間虛線是主和弦 [O]，往上是屬方向 [>]，往下是下屬方向 [<]。框內是機能記號，下方是最接近的一般和弦名。點任一個可試聽。",
+    "help.timeline": "整段進行的地圖。橫向是時間；縱向是和弦離「家」多遠：中間虛線是主和弦 [O]，往上是屬方向 [>]，往下是下屬方向 [<]。框內是機能記號，下方是最接近的一般和弦名。點任一個可試聽，並出現 ↻ 讓你換成同位置的代理和弦。",
     "help.stability": "這個和弦聽起來多安穩。含主音且主音在最低＝安定；含主音但不在最低＝半安定；不含主音＝不安定，會想往別處走。",
     "help.colNote": "每個音相對主音的名字（這套理論的唱名）。下面小字依序是：座標寫法、頻率比、在 41 平均律裡是第幾步。",
     "help.subs": "這些和弦在這個位置可以互相替代，因為它們屬於同一個「機能類」：離主和弦的距離相同，只是色彩不同（原形、陰的版本 ᴗ、瞬間換色的 ɣ）。屬的位置還可以換成挟み打ち [>+<]（3 次元時是屬七）。\n點任一個就會換上並試聽；標題列的 ↻ 會依序輪替。換了之後整段的聲部配置會重新計算。",
@@ -128,10 +129,11 @@ const I18N = {
     "o.cra": "cra (ᴗ)", "o.crana": "crana (ɣ)", "o.pat": "Sandwiching", "o.far": "Go out to ≪ ≫", "o.arp": "Arpeggiate", "o.loop": "Loop", "o.metro": "Metronome", "o.count": "One-bar count-in",
 
     "b.gen": "Generate a new progression", "b.play": "▶ Play", "b.stop": "■ Stop", "b.export": "⬇ Export MIDI", "b.expand": "Expand all", "b.collapse": "Collapse all",
-    "tl.title": "Progression map", "note": "Click a chord on the map to hear it and jump to its card. Click a card header for details, or ▶ to just listen. Hover over any circled ? for an explanation.",
+    "tl.title": "Progression map", "note": "Click a chord on the map to hear it; a ↻ appears at its corner that swaps in another substitute chord for that position. Click a card header for details, or ▶ to just listen. Hover over any circled ? for an explanation.",
 
     "card.chord": "Chord {n}", "card.approx": "12edo ≈ {name}", "card.bass": "base note", "card.closest": "Closest in 12edo: ", "card.refOnly": " (rough guide only)",
     "card.swap": "Swap for another substitute chord in this position", "card.subs": "This position can use:",
+    "star": "Star on GitHub",
     "th.note": "Note (low to high)", "th.12": "12edo", "th.dev": "Offset", "th.how": "On your instrument",
     "st.stable": "stable", "st.semi": "semi-stable", "st.unstable": "unstable",
     "v.exact": "12edo can play this chord exactly.", "v.close": "12edo is very close; fine-tuning makes it purer, with less beating.",
@@ -167,7 +169,7 @@ const I18N = {
 <li><b>Harmononyms</b>: each note's coordinate name relative to the tonic. Chy = 2D ascent, Fu = 2D descent, Ly/Su = 3D, My/Pu = 4D, Zy/Tschu = 5D; joined names multiply (Chyli = 15/8).</li>
 <li><b>Stability</b>: tonic present and lowest = stable; present but not lowest = semi-stable; absent = unstable.</li>
 <li><b>Small lattice</b>: horizontal is 2D (right = ascent), vertical is the guest dimension (up = ascent). The hollow box is the tonic, filled cells are the notes of this chord, and the triangle marks the base note.</li>`,
-    "footer.html": `Theory: Shasavistic music theory by LΛMPLIGHT (<a href="https://lamplight0.sakura.ne.jp/a/" target="_blank" rel="noopener">official site</a>). This page is an unofficial implementation based on the published material; where readings differ, the author's is authoritative. Sound: <a href="https://github.com/Tonejs/Tone.js" target="_blank" rel="noopener">Tone.js</a> (MIT).`,
+    "footer.html": `Theory: Shasavistic music theory by LΛMPLIGHT (<a href="https://lamplight0.sakura.ne.jp/a/" target="_blank" rel="noopener">official site</a>). This page is an unofficial implementation based on the published material; where readings differ, the author's is authoritative. Sound: <a href="https://github.com/Tonejs/Tone.js" target="_blank" rel="noopener">Tone.js</a> (MIT).<br>Made by <a href="https://github.com/Hikari-Tsai" target="_blank" rel="noopener">Hikari Tsai</a> · <a href="https://github.com/Hikari-Tsai/Semitone" target="_blank" rel="noopener">Source code</a> (MIT License)`,
 
     "help.mode": "Chooses the “colour note” of the chords.\n• 3D: the ordinary major triad (C-E-G), the most familiar.\n• 4D: replaces E with the 7th harmonic, bluesy and floating.\n• 5D: uses the 11th harmonic, which falls exactly between two piano keys; the most otherworldly.\nThe skeleton is always the perfect fifth (2D); only the colour note changes.",
     "help.len": "How many chords the progression has in total.",
@@ -193,7 +195,7 @@ const I18N = {
     "help.gen": "Randomly generates a new chord progression from the settings above. Different every time.",
     "help.export": "Downloads a MIDI file you can import into a DAW.\nMIDI note numbers can only be 12edo, so a pitch bend is sent before each note to correct it to the tuning you selected. Pitch bend applies to a whole channel, so each voice gets its own channel (1–5); drums are on channel 10.\nAfter importing, give all channels the same sound and make sure the instrument's bend range is ±2 semitones.",
     "help.toggleAll": "Expands or collapses all the chord cards below at once.",
-    "help.timeline": "A map of the whole progression. Horizontal is time; vertical is how far a chord is from home: the dashed middle line is the tonic chord [O], up is the dominant side [>], down is the subdominant side [<]. Each box shows the functograph, with the nearest ordinary chord name underneath. Click any chord to hear it.",
+    "help.timeline": "A map of the whole progression. Horizontal is time; vertical is how far a chord is from home: the dashed middle line is the tonic chord [O], up is the dominant side [>], down is the subdominant side [<]. Each box shows the functograph, with the nearest ordinary chord name underneath. Click any chord to hear it and to reveal a ↻ that swaps in a substitute for that position.",
     "help.stability": "How settled the chord sounds. Tonic present and lowest = stable; present but not lowest = semi-stable; absent = unstable, wanting to move on.",
     "help.colNote": "The name of each note relative to the tonic (the theory's solmization). The small print shows, in order: the coordinate formula, the frequency ratio, and the step number in 41edo.",
     "help.subs": "These chords can stand in for one another here because they belong to the same functional type: the same distance from the tonic chord, with a different colour (the plain form, the dark version ᴗ, the instant colour change ɣ). The dominant position can also take the sandwiching chord [>+<] (a dominant seventh in 3D).\nClick one to swap it in and hear it; the ↻ in the header cycles through them. The voicing of the whole progression is recalculated after a swap.",
@@ -226,10 +228,11 @@ const I18N = {
     "o.cra": "cra（ᴗ）", "o.crana": "crana（ɣ）", "o.pat": "挟み打ち", "o.far": "≪ ≫ まで進む", "o.arp": "アルペジオ", "o.loop": "ループ再生", "o.metro": "メトロノーム", "o.count": "1 小節のカウントイン",
 
     "b.gen": "新しい進行を生成", "b.play": "▶ 再生", "b.stop": "■ 停止", "b.export": "⬇ MIDI を書き出す", "b.expand": "すべて開く", "b.collapse": "すべて閉じる",
-    "tl.title": "コード進行の略図", "note": "略図の和音をクリックすると試聴でき、そのカードへ移動します。カードの見出しをクリックすると詳細が開き、▶ は試聴だけを行います。わからない項目は丸い ? にマウスを重ねてください。",
+    "tl.title": "コード進行の略図", "note": "略図の和音をクリックすると試聴でき、右上に ↻ が現れます。押すとその位置の別の代理和音に入れ替わります。カードの見出しをクリックすると詳細が開き、▶ は試聴だけを行います。わからない項目は丸い ? にマウスを重ねてください。",
 
     "card.chord": "和音 {n}", "card.approx": "12 平均律 ≈ {name}", "card.bass": "底音", "card.closest": "12 平均律で最も近い和音：", "card.refOnly": "（参考程度）",
     "card.swap": "この位置のほかの代理和音に入れ替える", "card.subs": "この位置で使える和音：",
+    "star": "スターをください",
     "th.note": "音（低い順）", "th.12": "12 平均律", "th.dev": "ずれ", "th.how": "あなたの楽器では",
     "st.stable": "安定", "st.semi": "半安定", "st.unstable": "不安定",
     "v.exact": "12 平均律でこの和音を完全に表現できます。", "v.close": "12 平均律でもかなり近いです。微調整するとより純正になり、うなりが減ります。",
@@ -265,7 +268,7 @@ const I18N = {
 <li><b>ハーモニム</b>：主音から見た各音の座標による音名。Chy = 2 次元上昇、Fu = 2 次元下降、Ly/Su = 3 次元、My/Pu = 4 次元、Zy/Tschu = 5 次元。つなげると掛け算になります（Chyli = 15/8）。</li>
 <li><b>安定度</b>：主音を含み、主音が最低音 = 安定。含むが最低音でない = 半安定。含まない = 不安定。</li>
 <li><b>小さな格子図</b>：横が 2 次元（右 = 上昇）、縦が客次元（上 = 上昇）。白抜きの枠が主音の位置、塗られたマスがこの和音の音、三角が底音です。</li>`,
-    "footer.html": `理論：LΛMPLIGHT 氏のシャサフ式音楽理論（<a href="https://lamplight0.sakura.ne.jp/a/" target="_blank" rel="noopener">公式サイト</a>）。本ページは公開資料に基づく非公式の実装であり、解釈が異なる場合は原作者の説明が優先されます。音源：<a href="https://github.com/Tonejs/Tone.js" target="_blank" rel="noopener">Tone.js</a>（MIT）。`,
+    "footer.html": `理論：LΛMPLIGHT 氏のシャサフ式音楽理論（<a href="https://lamplight0.sakura.ne.jp/a/" target="_blank" rel="noopener">公式サイト</a>）。本ページは公開資料に基づく非公式の実装であり、解釈が異なる場合は原作者の説明が優先されます。音源：<a href="https://github.com/Tonejs/Tone.js" target="_blank" rel="noopener">Tone.js</a>（MIT）。<br>作者：<a href="https://github.com/Hikari-Tsai" target="_blank" rel="noopener">Hikari Tsai</a>　·　<a href="https://github.com/Hikari-Tsai/Semitone" target="_blank" rel="noopener">ソースコード</a>（MIT ライセンス）`,
 
     "help.mode": "和音の「色を決める音」を選びます。\n• 3 次元：普通の長三和音（ド・ミ・ソ）。最もなじみのある響き。\n• 4 次元：ミを第 7 倍音に置き換えます。ブルース的で浮遊感があります。\n• 5 次元：第 11 倍音を使います。ピアノの鍵盤 2 つのちょうど中間にあり、最も「異世界」的です。\n骨格は常に完全 5 度（2 次元）で、色を決める音だけが変わります。",
     "help.len": "進行全体の和音の数です。",
@@ -291,7 +294,7 @@ const I18N = {
     "help.gen": "上の設定に従って、新しいコード進行をランダムに生成します。押すたびに変わります。",
     "help.export": "MIDI ファイルをダウンロードします。DAW に読み込めます。\nMIDI のノート番号は 12 平均律しか表せないため、各音の前にピッチベンドを送り、選んだ調律に補正します。ピッチベンドはチャンネル全体に効くので、声部ごとに 1 チャンネル（1〜5）を使い、ドラムは 10 チャンネルです。\n読み込んだら全チャンネルを同じ音色にし、音源のベンドレンジが ±2 半音であることを確認してください。",
     "help.toggleAll": "下の和音カードをまとめて開閉します。",
-    "help.timeline": "進行全体の地図です。横が時間、縦が「ホーム」からの距離を表します。中央の破線が主和音 [O]、上が属の方向 [>]、下が下属の方向 [<] です。枠の中は機能式、下は最も近い一般的なコード名です。クリックで試聴できます。",
+    "help.timeline": "進行全体の地図です。横が時間、縦が「ホーム」からの距離を表します。中央の破線が主和音 [O]、上が属の方向 [>]、下が下属の方向 [<] です。枠の中は機能式、下は最も近い一般的なコード名です。クリックすると試聴でき、同じ位置の代理和音に入れ替える ↻ が現れます。",
     "help.stability": "和音がどれだけ落ち着いて聞こえるかです。主音を含み、主音が最低音＝安定。含むが最低音でない＝半安定。含まない＝不安定で、ほかへ進みたがります。",
     "help.colNote": "主音から見た各音の名前（この理論の音名）です。小さい文字は順に、座標の式、周波数比、41 平均律での何番目の音か、を示します。",
     "help.subs": "これらの和音は同じ「機能類」に属するため、この位置で互いに代用できます。主和音からの距離は同じで、色合いだけが異なります（原形、陰の形 ᴗ、一瞬で色が変わる ɣ）。属の位置では挟み打ち [>+<]（3 次元では属七）にも入れ替えられます。\nクリックすると入れ替わり、試聴できます。見出しの ↻ は順番に切り替えます。入れ替えると進行全体の声部配置が計算し直されます。",

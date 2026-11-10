@@ -24,6 +24,12 @@
   main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
   h1 { margin: 0; font-size: 26px; letter-spacing: .02em; }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .topright { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .star { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; text-decoration: none;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 13px; font-weight: 600; }
+  .star:hover, .star:focus-visible { border-color: var(--accent); outline: none; }
+  .star .ico { color: #e3b341; font-size: 15px; line-height: 1; }
+  .star .count { padding: 0 7px; border-radius: 99px; background: var(--soft); font-variant-numeric: tabular-nums; font-weight: 500; }
   .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; background: var(--panel); }
   .lang button { border: 0; border-radius: 0; padding: 5px 13px; font-size: 13px; background: transparent; }
   .lang button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -64,7 +70,13 @@
   .timeline .node rect { fill: var(--soft); stroke: var(--line); stroke-width: 1.2; }
   .timeline .node.cra rect { stroke: var(--d3); } .timeline .node.crana rect { stroke: var(--d5); } .timeline .node.pat rect { stroke: var(--d2); }
   .timeline .node text { font: 600 13px ui-monospace, Menlo, monospace; fill: var(--ink); text-anchor: middle; }
+  .timeline .node.sel rect { stroke: var(--accent); stroke-width: 2.4; }
   .timeline .node.playing rect { fill: var(--accent); stroke: var(--accent); }
+  .timeline .swapbtn { cursor: pointer; }
+  .timeline .swapbtn circle { fill: var(--accent); stroke: var(--panel); stroke-width: 1.5; }
+  .timeline .swapbtn text { fill: var(--accent-ink); font: 700 12px system-ui, sans-serif; text-anchor: middle; pointer-events: none; }
+  .timeline .swapbtn:hover circle, .timeline .swapbtn:focus-visible circle { stroke: var(--ink); }
+  .timeline .swapbtn:focus-visible { outline: none; }
   .timeline .node.playing text { fill: var(--accent-ink); }
   .timeline .n12 { font: 12px system-ui, sans-serif; fill: var(--muted); text-anchor: middle; }
   .timeline .num { font: 10px system-ui, sans-serif; fill: var(--muted); text-anchor: middle; }
@@ -116,7 +128,11 @@
 <main>
   <div class="top">
     <h1>Semitone</h1>
-    <div class="lang" id="lang" role="group" data-i18n-aria="aria.lang"></div>
+    <div class="topright">
+      <a class="star" id="star" href="https://github.com/Hikari-Tsai/Semitone" target="_blank" rel="noopener">
+        <span class="ico" aria-hidden="true">★</span><span data-i18n="star"></span><span class="count" id="starCount" hidden></span></a>
+      <div class="lang" id="lang" role="group" data-i18n-aria="aria.lang"></div>
+    </div>
   </div>
   <p class="sub" data-i18n="sub"></p>
 
@@ -196,7 +212,7 @@ const DIM_COLOR = { 3: "var(--d3)", 4: "var(--d4)", 5: "var(--d5)" };
 for (const k of Object.keys(MODES)) { const o = new Option("", k); o.dataset.i18n = "mode." + k; $("mode").add(o); }
 NOTE_NAMES.forEach((n, i) => $("tonic").add(new Option(n, i)));
 
-let state = { seq: [], chords: [], voiced: [], open: new Set() };
+let state = { seq: [], chords: [], voiced: [], open: new Set(), sel: null }; // sel = 簡圖上選取的和弦
 let playToken = 0;
 
 const tonicMidi = () => { const pc = +$("tonic").value; return pc <= 6 ? 48 + pc : 36 + pc; }; // G2–F♯3
@@ -210,6 +226,7 @@ function generate() {
   const opt = { cra: $("oCra").checked, crana: $("oCrana").checked, pat: $("oPat").checked, range: $("oFar").checked ? 2 : 1 };
   state.seq = generateProgression(+$("len").value, opt);
   state.open.clear();
+  state.sel = null;
   rebuild();
 }
 function rebuild() {
@@ -283,12 +300,17 @@ function renderTimeline() {
   s += `<line id="ph" x1="0" x2="0" y1="${TL.top - 6}" y2="${TL.top + gridH + 4}" visibility="hidden"/>`;
   state.seq.forEach((f, i) => {
     const x = cx(i), y = cy(f.p);
-    s += `<g class="node ${f.v}" data-i="${i}"><title>${esc(t("card.chord", { n: i + 1 }))}: ${esc(state.chords[i].name)}</title>
+    s += `<g class="node ${f.v}${state.sel === i ? " sel" : ""}" data-i="${i}"><title>${esc(t("card.chord", { n: i + 1 }))}: ${esc(state.chords[i].name)}</title>
       <rect x="${x - TL.nodeW / 2}" y="${y - TL.nodeH / 2}" width="${TL.nodeW}" height="${TL.nodeH}" rx="6"/>
       <text x="${x}" y="${y + 4.5}">${esc(state.chords[i].symbol)}</text></g>`;
     s += `<text class="n12" x="${x}" y="${TL.top + gridH + 16}">${esc(name12Of(i))}</text>`;
     s += `<text class="num" x="${x}" y="${TL.top + gridH + 29}">${i + 1}</text>`;
   });
+  if (state.sel != null && state.seq[state.sel]) { // 選取的和弦右上角顯示「換代理和弦」按鈕
+    const x = cx(state.sel) + TL.nodeW / 2, y = cy(state.seq[state.sel].p) - TL.nodeH / 2;
+    s += `<g class="swapbtn" data-swap="${state.sel}" role="button" tabindex="0" aria-label="${esc(t("card.swap"))}">
+      <title>${esc(t("card.swap"))}</title><circle cx="${x}" cy="${y}" r="9.5"/><text x="${x}" y="${y + 4.2}">↻</text></g>`;
+  }
   $("timeline").innerHTML = s + "</svg>";
 }
 // frac：目前播放到第幾個和弦（可帶小數）；null 表示隱藏指針
@@ -719,15 +741,46 @@ $("toggleAll").onclick = () => {
   state.open = new Set(openAll ? state.chords.map((_, i) => i) : []);
   render();
 };
-// 簡圖：點和弦試聽，並捲到它的字卡
-$("timeline").addEventListener("click", (e) => {
-  const node = e.target.closest(".node");
-  if (!node) return;
-  const i = +node.dataset.i;
-  audition(i);
-  const card = document.querySelector(`.card[data-i="${i}"]`);
-  if (card) card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+// 簡圖：點和弦＝選取並試聽，右上角出現 ↻；點 ↻＝換成下一個代理和弦。不會動到下方字卡的開合
+function timelineAction(target) {
+  const swap = target.closest(".swapbtn");
+  if (swap) { swapChord(+swap.dataset.swap); return true; }
+  const node = target.closest(".node");
+  if (!node) return false;
+  state.sel = +node.dataset.i;
+  renderTimeline();
+  audition(state.sel);
+  return true;
+}
+$("timeline").addEventListener("click", (e) => { timelineAction(e.target); });
+$("timeline").addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.closest(".swapbtn")) {
+    e.preventDefault();
+    const i = +e.target.closest(".swapbtn").dataset.swap;
+    swapChord(i);
+    document.querySelector(".timeline .swapbtn")?.focus(); // 重畫後把焦點放回按鈕，方便連續按
+  }
 });
+
+// ── GitHub 星星數 ──
+// 用 GitHub 公開 API 查詢（不需登入，每個 IP 每小時 60 次）。結果暫存 10 分鐘，查不到時只顯示按鈕、不顯示數字。
+const REPO = "Hikari-Tsai/Semitone";
+async function loadStars() {
+  const show = (n) => { $("starCount").textContent = n.toLocaleString(); $("starCount").hidden = false; };
+  try {
+    const c = JSON.parse(sessionStorage.getItem("semitone.stars") || "null");
+    if (c && Date.now() - c.at < 600000) return show(c.n);
+  } catch (e) { /* 無法讀取暫存時直接查詢 */ }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}`, { headers: { Accept: "application/vnd.github+json" } });
+    if (!res.ok) return;
+    const n = (await res.json()).stargazers_count;
+    if (typeof n !== "number") return;
+    show(n);
+    try { sessionStorage.setItem("semitone.stars", JSON.stringify({ n, at: Date.now() })); } catch (e) { /* 略過 */ }
+  } catch (e) { /* 離線或被擋時不顯示數字 */ }
+}
+loadStars();
 
 // ── 語言切換 ──
 function applyLang() {

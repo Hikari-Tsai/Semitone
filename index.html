@@ -147,17 +147,17 @@
       <select id="instrument"><option value="free" data-i18n="inst.free"></option><option value="wind" data-i18n="inst.wind"></option><option value="guitar" data-i18n="inst.guitar"></option><option value="fixed" data-i18n="inst.fixed"></option></select></div>
     <div><label for="timbre"><span data-i18n="l.timbre"></span></label>
       <select id="timbre">
-        <optgroup data-i18n-label="tg.dance"><option value="supersaw" data-i18n="tb.supersaw"></option><option value="pluck" data-i18n="tb.pluck"></option><option value="stab" data-i18n="tb.stab"></option><option value="pwm" data-i18n="tb.pwm"></option><option value="hoover" data-i18n="tb.hoover"></option><option value="acid" data-i18n="tb.acid"></option></optgroup>
+        <optgroup data-i18n-label="tg.dance"><option value="supersaw" data-i18n="tb.supersaw"></option><option value="pluck" data-i18n="tb.pluck"></option><option value="stab" data-i18n="tb.stab"></option><option value="pwm" data-i18n="tb.pwm" selected></option><option value="hoover" data-i18n="tb.hoover"></option><option value="acid" data-i18n="tb.acid"></option></optgroup>
         <optgroup data-i18n-label="tg.pad"><option value="strings" data-i18n="tb.strings"></option><option value="pad" data-i18n="tb.pad"></option><option value="epiano" data-i18n="tb.epiano"></option><option value="bell" data-i18n="tb.bell"></option></optgroup>
-        <optgroup data-i18n-label="tg.check"><option value="organ" data-i18n="tb.organ" selected></option></optgroup>
+        <optgroup data-i18n-label="tg.check"><option value="organ" data-i18n="tb.organ"></option></optgroup>
       </select></div>
     <div><label for="rhythm"><span data-i18n="l.rhythm"></span></label>
       <select id="rhythm"><option value="sustain" data-i18n="rh.sustain"></option><option value="beat" data-i18n="rh.beat"></option><option value="eighth" data-i18n="rh.eighth"></option><option value="offbeat" data-i18n="rh.offbeat"></option><option value="tresillo" data-i18n="rh.tresillo"></option></select></div>
     <div><label for="drums"><span data-i18n="l.drums"></span></label>
-      <select id="drums"><option value="none" data-i18n="dr.none"></option><option value="house" data-i18n="dr.house"></option><option value="techno" data-i18n="dr.techno"></option><option value="trance" data-i18n="dr.trance"></option><option value="breaks" data-i18n="dr.breaks"></option><option value="garage" data-i18n="dr.garage"></option><option value="halftime" data-i18n="dr.halftime"></option></select></div>
+      <select id="drums"><option value="none" data-i18n="dr.none"></option><option value="house" data-i18n="dr.house"></option><option value="techno" data-i18n="dr.techno"></option><option value="trance" data-i18n="dr.trance"></option><option value="breaks" data-i18n="dr.breaks"></option><option value="garage" data-i18n="dr.garage"></option><option value="halftime" data-i18n="dr.halftime" selected></option></select></div>
     <div><label for="drumVol"><span data-i18n="l.drumVol"></span></label><input id="drumVol" type="range" min="0" max="100" value="70"></div>
     <div><label for="bpm"><span data-i18n="l.bpm"></span></label>
-      <input id="bpm" type="number" min="30" max="300" step="1" value="150"></div>
+      <input id="bpm" type="number" min="30" max="300" step="1" value="189"></div>
     <div><label for="sigNum"><span data-i18n="l.sig"></span></label>
       <div class="sig"><input id="sigNum" type="number" min="1" max="16" step="1" value="4" data-i18n-aria="aria.sigNum">
         <span>/</span>
@@ -171,7 +171,7 @@
         <label><input type="checkbox" id="oPat" checked> <span data-i18n="o.pat"></span></label>
         <label><input type="checkbox" id="oFar"> <span data-i18n="o.far"></span></label>
         <label><input type="checkbox" id="oArp"> <span data-i18n="o.arp"></span></label>
-        <label><input type="checkbox" id="oLoop"> <span data-i18n="o.loop"></span></label>
+        <label><input type="checkbox" id="oLoop" checked> <span data-i18n="o.loop"></span></label>
         <label><input type="checkbox" id="oMetro"> <span data-i18n="o.metro"></span></label>
         <label><input type="checkbox" id="oCount"> <span data-i18n="o.count"></span></label>
       </div></div>
@@ -183,6 +183,7 @@
     <button id="stop" data-i18n="b.stop"></button>
     <button id="export" data-i18n="b.export"></button>
     <button id="toggleAll"></button>
+    <button id="reset" data-i18n="b.reset"></button>
   </div>
   <p class="note" id="tlTitle" style="margin:14px 0 -8px"><span data-i18n="tl.title"></span></p>
   <section class="timeline" id="timeline" data-i18n-aria="tl.title"></section>
@@ -210,9 +211,10 @@ const DIM_COLOR = { 3: "var(--d3)", 4: "var(--d4)", 5: "var(--d5)" };
 
 // ── 選單 ──
 for (const k of Object.keys(MODES)) { const o = new Option("", k); o.dataset.i18n = "mode." + k; $("mode").add(o); }
+$("mode").value = "5f"; // 預設：5 次元（作者建議的 AhChyFuzi 配置）
 NOTE_NAMES.forEach((n, i) => $("tonic").add(new Option(n, i)));
 
-let state = { seq: [], chords: [], voiced: [], open: new Set(), sel: null }; // sel = 簡圖上選取的和弦
+let state = { seq: [], chords: [], voiced: [], home: [], open: new Set(), sel: null }; // sel = 簡圖上選取的和弦
 let playToken = 0;
 
 const tonicMidi = () => { const pc = +$("tonic").value; return pc <= 6 ? 48 + pc : 36 + pc; }; // G2–F♯3
@@ -225,9 +227,11 @@ function generate() {
   stop();
   const opt = { cra: $("oCra").checked, crana: $("oCrana").checked, pat: $("oPat").checked, range: $("oFar").checked ? 2 : 1 };
   state.seq = generateProgression(+$("len").value, opt);
+  state.home = state.seq.map((fn) => ({ ...fn })); // 每個位置原本的機能，用來判斷哪些算「代理」
   state.open.clear();
   state.sel = null;
   rebuild();
+  saveState();
 }
 function rebuild() {
   const G = MODES[$("mode").value].G;
@@ -322,36 +326,69 @@ function setPlayhead(frac) {
   ph.setAttribute("x1", x); ph.setAttribute("x2", x); ph.setAttribute("visibility", "visible");
 }
 
-// ── 代理和弦：同一個位置上可以互換的和弦 ──
-// 依理論的「機能類」：同一個機能位的 ta／cra／crana 屬於同一類，功能相同、色彩不同。
-// 屬的位置另外可換成挟み打ち [>+<]（屬和弦加上下屬的機能音）。
+// ── 更換單一和弦：這個位置可以換成哪些和弦 ──
+// 分兩組：
+// 1. 代理：同一個「機能類」。同一個機能位的 ta／cra／crana 功能相同、色彩不同；
+//    屬的位置另外可換成挟み打ち [>+<]。
+// 2. 其他合理的和弦：不同機能，但與前後和弦接得起來。依原作者的作曲訣竅判斷：
+//    與相鄰和弦有共通音，或底音與相鄰底音在 2 親等以內。
 const sameFn = (a, b) => !!a && !!b && a.p === b.p && a.v === b.v;
 function substitutes(i) {
-  const cur = state.seq[i], p = cur.v === "pat" ? 1 : cur.p;
+  const cur = state.home[i], p = cur.v === "pat" ? 1 : cur.p; // 以產生時的和弦為準，輪替時候選清單才不會跟著跑掉
   const list = ["ta", "cra", "crana"].map((v) => ({ p, v }));
   if (p === 1) list.push({ p: 0, v: "pat" });
   return list;
 }
+// 兩個和弦接不接得起來，以及接得多順（共通音越多、底音越近，分數越高）
+function linkScore(a, b) {
+  const keys = new Set(a.tones.map(key));
+  const common = new Set(b.tones.filter((x) => keys.has(key(x))).map(key)).size;
+  const k = kin(sub(b.bass, a.bass));
+  return { ok: common > 0 || k <= 2, score: common * 2 - k * 0.5 };
+}
+function otherOptions(i) {
+  const G = MODES[$("mode").value].G;
+  const subs = substitutes(i);
+  const neighbours = [state.seq[i - 1], state.seq[i + 1]].filter(Boolean).map((fn) => buildChord(fn, G));
+  const all = [{ p: 0, v: "pat" }];
+  for (let p = -2; p <= 2; p++) for (const v of ["ta", "cra", "crana"]) all.push({ p, v });
+  return all
+    .filter((fn) => !subs.some((x) => sameFn(x, fn)) && !sameFn(fn, state.seq[i - 1]) && !sameFn(fn, state.seq[i + 1]))
+    .map((fn) => { const links = neighbours.map((nb) => linkScore(nb, buildChord(fn, G)));
+      return { fn, ok: links.every((l) => l.ok), score: links.reduce((sum, l) => sum + l.score, 0) }; })
+    .filter((c) => c.ok)
+    .sort((x, y) => y.score - x.score) // 接得最順的排前面
+    .map((c) => c.fn);
+}
+// 全部候選：代理在前，其他合理的和弦在後。↻ 依這個順序輪替
+const swapOptions = (i) => [...substitutes(i), ...otherOptions(i)];
 // 候選和弦在 12 平均律下最接近的名字（不看實際聲部配置，只看音高類別）
 function roughName12(fn) {
   const ch = buildChord(fn, MODES[$("mode").value].G), tm = tonicMidi();
   const pc = (v) => mod(Math.round(tm + 12 * jiClassLog(v)), 12);
   return chordName12(ch.tones.map(pc), pc(ch.bass));
 }
-function subChips(i) {
+function chipHtml(i, j, fn) {
   const G = MODES[$("mode").value].G;
-  return substitutes(i).map((fn, j) => `<button type="button" data-sub="${i}:${j}" aria-pressed="${sameFn(fn, state.seq[i])}">${esc(buildChord(fn, G).symbol)}<span class="n12s">${esc(roughName12(fn))}</span></button>`).join("");
+  return `<button type="button" data-sub="${i}:${j}" aria-pressed="${sameFn(fn, state.seq[i])}">${esc(buildChord(fn, G).symbol)}<span class="n12s">${esc(roughName12(fn))}</span></button>`;
+}
+function subChips(i) {
+  const subs = substitutes(i), others = otherOptions(i);
+  let h = `<div class="subs"><span class="k">${esc(t("card.subs"))}</span>${helpIcon("subs")}${subs.map((fn, j) => chipHtml(i, j, fn)).join("")}</div>`;
+  if (others.length) h += `<div class="subs"><span class="k">${esc(t("card.others"))}</span>${helpIcon("others")}${others.map((fn, j) => chipHtml(i, subs.length + j, fn)).join("")}</div>`;
+  return h;
 }
 // fn 省略時輪替到下一個候選，並盡量避開與前後和弦完全相同的選項
 function swapChord(i, fn) {
   if (!fn) {
-    const list = substitutes(i), at = list.findIndex((f) => sameFn(f, state.seq[i]));
+    const list = swapOptions(i), at = list.findIndex((f) => sameFn(f, state.seq[i]));
     const order = list.map((_, k) => list[(at + 1 + k) % list.length]).filter((f) => !sameFn(f, state.seq[i]));
     fn = order.find((f) => !sameFn(f, state.seq[i - 1]) && !sameFn(f, state.seq[i + 1])) || order[0];
   }
   if (!fn || sameFn(fn, state.seq[i])) return;
   state.seq[i] = fn;
   rebuild(); // 聲部配置與前後和弦有關，整段重算
+  saveState();
   audition(i);
 }
 
@@ -392,7 +429,7 @@ function render() {
         <div class="fm">${esc(ch.chordonym)}</div>
         <div class="row">${latticeSvg(ch, mode)}
           <div class="desc"><p>${esc(roleText(state.seq[i]))}</p>${moveText(i)}</div></div>
-        <div class="subs"><span class="k">${esc(t("card.subs"))}</span>${helpIcon("subs")}${subChips(i)}</div>
+        ${subChips(i)}
         <div class="twelve">${esc(t("card.closest"))}<b>${esc(name12)}</b>${maxDev >= 40 ? esc(t("card.refOnly")) : ""}<br>${esc(verdict)}</div>
         <table><thead><tr><th>${esc(t("th.note"))}${helpIcon("colNote")}</th><th>${esc(t("th.12"))}</th><th>${esc(t("th.dev"))}${helpIcon("colDev")}</th><th>${esc(t("th.how"))}</th></tr></thead><tbody>${rows}</tbody></table>
       </div>
@@ -643,7 +680,7 @@ async function audition(i) {
 // ── 速度與拍號 ──
 const clamp = (x, lo, hi, dflt) => (Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : dflt);
 function timing() {
-  const bpm = clamp(parseFloat($("bpm").value), 30, 300, 150);
+  const bpm = clamp(parseFloat($("bpm").value), 30, 300, 189);
   const num = clamp(Math.round(parseFloat($("sigNum").value)), 1, 16, 4);
   const den = +$("sigDen").value, bars = +$("bars").value;
   const quarters = bars * num * 4 / den; // 一個和弦佔幾個四分音符
@@ -680,7 +717,7 @@ for (const k of ["mode", "len", "tonic", "tuning", "instrument", "timbre", "rhyt
   addHelp(document.querySelector(`label[for="${k}"]`), k);
 addHelp($("optsLabel"), "optsLabel");
 for (const k of ["oCra", "oCrana", "oPat", "oFar", "oArp", "oLoop", "oMetro", "oCount"]) addHelp($(k).parentElement, k);
-for (const k of ["gen", "export", "toggleAll"]) addHelp($(k), k, "afterend");
+for (const k of ["gen", "export", "toggleAll", "reset"]) addHelp($(k), k, "afterend");
 addHelp($("tlTitle"), "timeline");
 
 const tip = $("tip");
@@ -722,7 +759,7 @@ showDur();
 // 字卡：點標題展開／收合；點 ▶ 只試聽、不展開
 $("cards").addEventListener("click", (e) => {
   const sub = e.target.closest("[data-sub]");
-  if (sub) { const [i, j] = sub.dataset.sub.split(":").map(Number); swapChord(i, substitutes(i)[j]); return; }
+  if (sub) { const [i, j] = sub.dataset.sub.split(":").map(Number); swapChord(i, swapOptions(i)[j]); return; }
   const btn = e.target.closest(".aud");
   if (!btn) return;
   e.preventDefault(); // 標題列上的按鈕不要觸發展開／收合
@@ -799,7 +836,56 @@ $("lang").addEventListener("click", (e) => {
 });
 applyLang();
 
-generate();
+// ── 記住上次的設定與進行 ──
+// 存在瀏覽器的 localStorage（只留在這台裝置的這個瀏覽器裡，不會傳到任何伺服器）。
+const FIELDS = ["mode", "len", "tonic", "tuning", "instrument", "timbre", "rhythm", "drums", "drumVol", "bpm", "sigNum", "sigDen", "bars"];
+const CHECKS = ["oCra", "oCrana", "oPat", "oFar", "oArp", "oLoop", "oMetro", "oCount"];
+const STORE_KEY = "semitone.state";
+function readSettings() {
+  const o = {};
+  for (const id of FIELDS) o[id] = $(id).value;
+  for (const id of CHECKS) o[id] = $(id).checked;
+  return o;
+}
+function writeSettings(o) {
+  for (const id of FIELDS) {
+    if (typeof o[id] !== "string") continue;
+    $(id).value = o[id];
+    if ($(id).tagName === "SELECT" && $(id).value !== o[id]) $(id).value = DEFAULTS[id]; // 選項已不存在時退回預設
+  }
+  for (const id of CHECKS) if (typeof o[id] === "boolean") $(id).checked = o[id];
+}
+const DEFAULTS = readSettings(); // 此時畫面上還是出廠預設值，先記下來給「恢復預設值」用
+const validFn = (f) => f && Number.isInteger(f.p) && Math.abs(f.p) <= 2 && ["ta", "cra", "crana", "pat"].includes(f.v);
+function saveState() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, settings: readSettings(), seq: state.seq, home: state.home }));
+  } catch (e) { /* 無法寫入（例如無痕模式）時略過 */ }
+}
+// 成功還原上次的進行時回傳 true
+function restoreState() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) { return false; }
+  if (!saved || saved.v !== 1 || !saved.settings) return false;
+  writeSettings(saved.settings);
+  showDur();
+  if (!Array.isArray(saved.seq) || !saved.seq.length || !saved.seq.every(validFn)) return false;
+  state.seq = saved.seq.map((f) => ({ p: f.p, v: f.v }));
+  const home = Array.isArray(saved.home) && saved.home.length === state.seq.length && saved.home.every(validFn) ? saved.home : state.seq;
+  state.home = home.map((f) => ({ p: f.p, v: f.v }));
+  rebuild();
+  return true;
+}
+function resetDefaults() {
+  writeSettings(DEFAULTS);
+  showDur();
+  generate(); // 用預設值重新生成，並覆蓋掉先前儲存的內容
+}
+document.querySelector(".controls").addEventListener("input", saveState);
+document.querySelector(".controls").addEventListener("change", saveState);
+$("reset").onclick = resetDefaults;
+
+if (!restoreState()) generate();
 </script>
 </body>
 </html>

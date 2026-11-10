@@ -55,6 +55,11 @@
   .checks { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
   .checks label { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 14px; color: var(--ink); }
   .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 8px; align-items: center; }
+  .actions.playrow { margin-top: 0; }
+  .actions .spacer { flex: 1; }
+  .actions .kbd { color: var(--muted); font-size: 12.5px; }
+  .actions label.inline { margin: 0; font-size: 13px; }
+  .actions select { width: auto; max-width: 100%; padding: 9px 8px; border-radius: 10px; }
   button { font: inherit; border-radius: 10px; border: 1px solid var(--line); padding: 9px 18px; cursor: pointer;
     background: var(--panel); color: var(--ink); }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
@@ -87,6 +92,18 @@
   .custom .msg { margin: 6px 0 0; font-size: 13px; color: var(--muted); min-height: 1.4em; }
   .custom .msg.bad { color: var(--bad); }
   .used { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .timeline .n12 { cursor: pointer; }
+  .tl-menu { position: absolute; z-index: 6; width: 20px; height: 20px; border-radius: 50%; background: var(--accent);
+    color: var(--accent-ink); border: 1.5px solid var(--panel); display: flex; align-items: center; justify-content: center;
+    font: 700 11px/1 system-ui, sans-serif; }
+  .tl-menu:hover, .tl-menu:focus-within { border-color: var(--ink); }
+  .tl-menu select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
+  .tl-edit { position: absolute; z-index: 6; width: 92px; height: 26px; padding: 2px 6px; text-align: center;
+    font: 600 13px ui-monospace, Menlo, monospace; color: var(--ink); background: var(--bg);
+    border: 2px solid var(--accent); border-radius: 7px; outline: none; }
+  .tl-edit.bad { border-color: var(--bad); animation: tl-shake .25s; }
+  @keyframes tl-shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+  @media (prefers-reduced-motion: reduce) { .tl-edit.bad { animation: none; } }
   .timeline .swapbtn { cursor: pointer; }
   .timeline .swapbtn circle { fill: var(--accent); stroke: var(--panel); stroke-width: 1.5; }
   .timeline .swapbtn text { fill: var(--accent-ink); font: 700 12px system-ui, sans-serif; text-anchor: middle; pointer-events: none; }
@@ -155,8 +172,6 @@
     <div><label for="mode"><span data-i18n="l.mode"></span></label><select id="mode"></select></div>
     <div><label for="len"><span data-i18n="l.len"></span></label>
       <select id="len"><option>4</option><option selected>8</option><option>12</option><option>16</option></select></div>
-    <div><label for="source"><span data-i18n="l.source"></span></label>
-      <select id="source"><option value="mix" data-i18n="src.mix" selected></option><option value="random" data-i18n="src.random"></option><option value="library" data-i18n="src.library"></option></select></div>
     <div><label for="tonic"><span data-i18n="l.tonic"></span></label><select id="tonic"></select></div>
     <div><label for="tuning"><span data-i18n="l.tuning"></span></label>
       <select id="tuning"><option value="ji" data-i18n="tuning.ji"></option><option value="edo41" data-i18n="tuning.edo41"></option><option value="edo12" data-i18n="tuning.edo12"></option></select></div>
@@ -203,11 +218,17 @@
     <p class="msg" id="customMsg" aria-live="polite"></p>
   </section>
 
-  <div class="actions">
+  <div class="actions genrow">
+    <label for="source" class="inline"><span data-i18n="l.source"></span></label>
+    <select id="source"><option value="mix" data-i18n="src.mix" selected></option><option value="random" data-i18n="src.random"></option><option value="library" data-i18n="src.library"></option></select>
     <button class="primary" id="gen" data-i18n="b.gen"></button>
+  </div>
+  <div class="actions playrow">
     <button id="play" data-i18n="b.play"></button>
     <button id="stop" data-i18n="b.stop"></button>
     <button id="export" data-i18n="b.export"></button>
+    <span class="kbd" data-i18n="kbd"></span>
+    <span class="spacer"></span>
     <button id="toggleAll"></button>
     <button id="reset" data-i18n="b.reset"></button>
   </div>
@@ -362,7 +383,7 @@ function renderTimeline() {
     s += `<g class="node ${f.v}${state.sel === i ? " sel" : ""}" data-i="${i}"><title>${esc(t("card.chord", { n: i + 1 }))}: ${esc(state.chords[i].name)}</title>
       <rect x="${x - TL.nodeW / 2}" y="${y - TL.nodeH / 2}" width="${TL.nodeW}" height="${TL.nodeH}" rx="6"/>
       <text x="${x}" y="${y + 4.5}">${esc(state.chords[i].symbol)}</text></g>`;
-    s += `<text class="n12" x="${x}" y="${TL.top + gridH + 16}">${esc(name12Of(i))}</text>`;
+    s += `<text class="n12" data-i="${i}" x="${x}" y="${TL.top + gridH + 16}">${esc(name12Of(i))}</text>`;
     s += `<text class="num" x="${x}" y="${TL.top + gridH + 29}">${i + 1}</text>`;
   });
   if (state.sel != null && state.seq[state.sel]) { // 選取的和弦右上角顯示「換代理和弦」按鈕
@@ -371,9 +392,36 @@ function renderTimeline() {
       <title>${esc(t("card.swap"))}</title><circle cx="${x}" cy="${y}" r="9.5"/><text x="${x}" y="${y + 4.2}">↻</text></g>`;
   }
   $("timeline").innerHTML = s + "</svg>";
+  placeSwapMenu();
   const names = state.label.map((id) => PROG_LIBRARY.find((it) => it.id === id)).filter(Boolean).map((it) => it.name[LANG] || it.name.en);
   $("usedProg").hidden = !names.length;
   $("usedProg").textContent = names.length ? t("used", { list: names.join(" ＋ ") }) : "";
+}
+// 選取的和弦右下角放一個下拉選單，列出這個位置所有合理的和弦（代理＋其他），可直接挑選
+function placeSwapMenu() {
+  const i = state.sel, box = $("timeline");
+  const node = i == null ? null : box.querySelector(`.node[data-i="${i}"]`);
+  if (!node) return;
+  const G = MODES[$("mode").value].G, subs = substitutes(i), others = otherOptions(i);
+  const label = (fn) => `${buildChord(fn, G).symbol}  ${roughName12(fn)}`;
+  const opts = (list, offset) => list.map((fn, j) => `<option value="${offset + j}"${sameFn(fn, state.seq[i]) ? " selected" : ""}>${esc(label(fn))}</option>`).join("");
+  const groupName = (k) => esc(t(k).replace(/[：:\s]+$/, ""));
+  const all = [...subs, ...others];
+  // 目前的和弦若不在候選裡（例如手動輸入的），補一個選項讓選單顯示正確
+  const current = all.some((fn) => sameFn(fn, state.seq[i])) ? "" : `<option value="-1" selected>${esc(label(state.seq[i]))}</option>`;
+  const wrap = document.createElement("span");
+  wrap.className = "tl-menu";
+  wrap.innerHTML = `<span aria-hidden="true">▾</span><select aria-label="${esc(t("card.pick"))}" title="${esc(t("card.pick"))}">${current}
+    <optgroup label="${groupName("card.subs")}">${opts(subs, 0)}</optgroup>
+    ${others.length ? `<optgroup label="${groupName("card.others")}">${opts(others, subs.length)}</optgroup>` : ""}</select>`;
+  const r = node.getBoundingClientRect(), b = box.getBoundingClientRect();
+  wrap.style.left = (r.right - b.left + box.scrollLeft - 10) + "px";
+  wrap.style.top = (r.bottom - b.top + box.scrollTop - 10) + "px";
+  wrap.querySelector("select").addEventListener("change", (e) => {
+    const fn = all[+e.target.value];
+    if (fn) swapChord(i, fn);
+  });
+  box.appendChild(wrap);
 }
 // frac：目前播放到第幾個和弦（可帶小數）；null 表示隱藏指針
 function setPlayhead(frac) {
@@ -493,6 +541,7 @@ function render() {
       </div>
     </details>`;
   }).join("");
+  if (nowPlaying >= 0) mark(nowPlaying); // 播放中重畫時補回反白
 }
 
 // ── 合成器（Tone.js） ──
@@ -678,7 +727,9 @@ function scheduleClicks(q0, quarters, tm, at) {
   }
 }
 
+let nowPlaying = -1; // 目前反白的和弦；畫面重畫後要補回反白
 function mark(i) {
+  nowPlaying = i;
   document.querySelectorAll(".card, .timeline .node").forEach((c) => c.classList.toggle("playing", +c.dataset.i === i));
 }
 // 等到音訊時鐘走到 t。聲音本身用音訊時鐘精準排程，這裡只負責畫面與「提前一點排下一個和弦」
@@ -687,6 +738,7 @@ async function play() {
   await Tone.start();
   stop();
   const token = ++playToken;
+  isPlaying = true;
   let at = Tone.now() + 0.1, step = 0; // at = 下一個和弦開始的音訊時間；step = 累計的十六分音符格數
   if ($("oCount").checked) { // 預備拍：先數一小節再開始
     const tm = timing(), barQuarters = tm.num * 4 / tm.den;
@@ -718,10 +770,12 @@ async function play() {
     }
   } while ($("oLoop").checked && token === playToken);
   await waitUntil(at);
-  if (token === playToken) { mark(-1); setPlayhead(null); }
+  if (token === playToken) { isPlaying = false; mark(-1); setPlayhead(null); }
 }
+let isPlaying = false;
 function stop() {
   playToken++;
+  isPlaying = false;
   disposeSynth(); // 聲音是預先排程的，停止時要連同還沒發聲的一併取消
   disposeKit();
   disposeClicker();
@@ -814,7 +868,15 @@ $("export").onclick = exportMidi;
 ["bpm", "sigNum", "sigDen", "bars"].forEach((id) => $(id).addEventListener("input", showDur));
 $("drumVol").addEventListener("input", setDrumVolume);
 showDur();
-["mode"].forEach((id) => ($(id).onchange = () => { stop(); showCustomBox(); rebuild(); }));
+// 切換次元不中斷播放：已經在響的和弦照舊，下一個和弦起改用新的次元
+["mode"].forEach((id) => ($(id).onchange = () => { showCustomBox(); rebuild(); }));
+// 空白鍵：播放／停止。正在輸入文字、數字或操作選單時不攔截
+document.addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest("input, select, textarea, [contenteditable]")) return;
+  e.preventDefault(); // 避免捲動頁面，或誤觸目前聚焦的按鈕
+  if (isPlaying) stop(); else play();
+});
 $("apply").onclick = applyCustom;
 $("custom").addEventListener("keydown", (e) => { if (e.key === "Enter") applyCustom(); });
 ["tonic", "tuning", "instrument"].forEach((id) => ($(id).onchange = render));
@@ -841,17 +903,59 @@ $("toggleAll").onclick = () => {
   render();
 };
 // 簡圖：點和弦＝選取並試聽，右上角出現 ↻；點 ↻＝換成下一個代理和弦。不會動到下方字卡的開合
-function timelineAction(target) {
+function timelineAction(e) {
+  const target = e.target;
+  if (target.closest(".tl-edit, .tl-menu")) return;
   const swap = target.closest(".swapbtn");
-  if (swap) { swapChord(+swap.dataset.swap); return true; }
-  const node = target.closest(".node");
-  if (!node) return false;
-  state.sel = +node.dataset.i;
+  if (swap) { swapChord(+swap.dataset.swap); return; }
+  const node = target.closest(".node") || target.closest(".n12");
+  if (!node) return;
+  const i = +node.dataset.i;
+  if (e.detail >= 2) { startEdit(i); return; } // 雙擊：直接輸入要換成的和弦
+  state.sel = i;
   renderTimeline();
-  audition(state.sel);
-  return true;
+  audition(i);
 }
-$("timeline").addEventListener("click", (e) => { timelineAction(e.target); });
+// 在簡圖上就地編輯第 i 個和弦。可輸入和弦名、級數或機能式，Enter 套用、Esc 取消
+function startEdit(i) {
+  document.querySelector(".tl-edit")?.remove();
+  const box = $("timeline"), node = box.querySelector(`.node[data-i="${i}"]`);
+  if (!node) return;
+  const r = node.getBoundingClientRect(), b = box.getBoundingClientRect();
+  const input = document.createElement("input");
+  input.className = "tl-edit";
+  input.type = "text"; input.autocomplete = "off"; input.spellcheck = false;
+  input.setAttribute("aria-label", t("edit.label", { n: i + 1 }));
+  input.value = state.chords[i].symbol.replace(/[\[\]]/g, "");
+  input.style.left = (r.left - b.left + box.scrollLeft + r.width / 2 - 46) + "px";
+  input.style.top = (r.top - b.top + box.scrollTop + r.height / 2 - 13) + "px";
+  let done = false;
+  const close = () => { if (!done) { done = true; input.remove(); } };
+  input.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Escape") return close();
+    if (ev.key !== "Enter") return input.classList.remove("bad");
+    const parsed = parseProgression(input.value.trim(), +$("tonic").value);
+    if (parsed.seq.length !== 1 || parsed.unknown.length || parsed.unsupported.length) {
+      input.classList.remove("bad"); void input.offsetWidth; input.classList.add("bad"); // 重新觸發晃動
+      input.title = t("edit.bad");
+      return;
+    }
+    close();
+    state.seq[i] = parsed.seq[0];
+    state.home[i] = { ...parsed.seq[0] }; // 手動指定的和弦成為這個位置新的基準
+    state.label = [];
+    state.sel = i;
+    rebuild();
+    saveState();
+    audition(i);
+  });
+  input.addEventListener("blur", close);
+  box.appendChild(input);
+  input.focus(); input.select();
+}
+$("timeline").addEventListener("click", timelineAction);
+window.addEventListener("resize", () => { if (state.sel != null) renderTimeline(); }); // 選單是疊在圖上的，視窗大小改變要重新定位
 $("timeline").addEventListener("keydown", (e) => {
   if ((e.key === "Enter" || e.key === " ") && e.target.closest(".swapbtn")) {
     e.preventDefault();
@@ -951,6 +1055,7 @@ function resetDefaults() {
 document.querySelector(".controls").addEventListener("input", saveState);
 document.querySelector(".controls").addEventListener("change", saveState);
 $("custom").addEventListener("input", saveState);
+$("source").addEventListener("change", saveState); // 生成方式不在設定區內，另外監聽
 $("reset").onclick = resetDefaults;
 
 showCustomBox();

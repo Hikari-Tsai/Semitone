@@ -55,7 +55,11 @@ python3 -m http.server 8765
 - `ᴗ`（cra）把和弦翻成陰的版本（3 次元時是關係小和弦）；`ɣ`（crana）只保留一個音再翻回陽和弦。
 - 挟み打ち `[>+<]`：屬和弦加上下屬的中心音，從兩側夾住主和弦（3 次元時是屬七）。
 
-更完整的整理見 [notes/shasavistic-theory.md](notes/shasavistic-theory.md)（繁體中文）。
+想更深入了解（皆為繁體中文）：
+
+- [入門導讀](docs/theory-guide.md)：照理解的順序把這套理論走一遍，每一步用 C 大調舉例，並對照 Semitone 的畫面。
+- [研讀筆記](notes/shasavistic-theory.md)：完整的術語、記號與細節，適合查閱。
+- [作者的自創語言](docs/shasavic-language.md)：Chy、Fu、Ahta 這些名字來自作者的人工語言「沙語」，這裡介紹它與理論的關係。
 
 ## 進行產生器的規則
 
@@ -85,6 +89,8 @@ MIDI 的音符號碼只能是 12 平均律，微分音靠彎音修正：
 | `theory.js` | 計算核心：音高向量、唱名、機能到和弦、進行產生、聲部配置、12 平均律對照 |
 | `midi.js` | 標準 MIDI 檔產生器 |
 | `i18n.js` | 三種語言的介面文字。新增文字時三種語言都要補 |
+| `docs/theory-guide.md` | 理論入門導讀 |
+| `docs/shasavic-language.md` | 作者的自創語言（沙語等）簡介 |
 | `notes/shasavistic-theory.md` | 理論研讀筆記 |
 
 ## 已知限制
